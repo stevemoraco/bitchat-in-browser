@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import accessibility styles */
+@import './a11y.css';
+
+/* Import responsive design system */
+@import './responsive.css';
+
+/* Base styles for terminal aesthetic */
+@layer base {
+  html {
+    @apply antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-terminal-bg text-terminal-green font-mono;
+    font-feature-settings: 'liga' 1, 'calt' 1;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-terminal-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-terminal-green/30 rounded-sm;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-terminal-green/50;
+  }
+
+  /* Selection styling */
+  ::selection {
+    @apply bg-terminal-green text-terminal-bg;
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    @apply outline-none ring-1 ring-terminal-green ring-offset-1 ring-offset-terminal-bg;
+  }
+}
+
+/* Component styles */
+@layer components {
+  /* Terminal-style button */
+  .btn-terminal {
+    @apply px-4 py-2 border border-terminal-green text-terminal-green;
+    @apply hover:bg-terminal-green hover:text-terminal-bg;
+    @apply active:bg-terminal-green/80;
+    @apply transition-colors duration-150;
+    @apply font-mono text-sm;
+  }
+
+  /* Terminal-style input */
+  .input-terminal {
+    @apply bg-transparent border border-terminal-green/50 text-terminal-green;
+    @apply px-3 py-2 font-mono text-sm;
+    @apply focus:border-terminal-green focus:outline-none;
+    @apply placeholder:text-terminal-green/30;
+  }
+
+  /* Terminal-style card */
+  .card-terminal {
+    @apply border border-terminal-green/30 p-4;
+    @apply bg-terminal-bg/80 backdrop-blur-sm;
+  }
+
+  /* Status indicator */
+  .status-ok {
+    @apply text-terminal-green;
+  }
+
+  .status-warning {
+    @apply text-terminal-yellow;
+  }
+
+  .status-error {
+    @apply text-terminal-red;
+  }
+
+  .status-pending {
+    @apply text-terminal-green/50;
+  }
+}
+
+/* Utility styles */
+@layer utilities {
+  /* Terminal cursor blink animation */
+  .animate-cursor {
+    animation: cursor-blink 1s step-end infinite;
+  }
+
+  @keyframes cursor-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Scanline effect (optional retro feel) */
+  .scanlines::after {
+    content: '';
+    @apply absolute inset-0 pointer-events-none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1px,
+      rgba(0, 0, 0, 0.03) 1px,
+      rgba(0, 0, 0, 0.03) 2px
+    );
+  }
+
+  /* Glow effect for important elements */
+  .glow-green {
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  }
+
+  /* Safe area insets for iOS */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}

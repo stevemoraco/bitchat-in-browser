@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "description": "Test scripts configuration for BitChat In Browser. Copy these scripts to your package.json",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:coverage:report": "vitest run --coverage && open coverage/index.html",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:firefox": "playwright test --project=firefox",
+    "test:e2e:webkit": "playwright test --project=webkit",
+    "test:e2e:mobile": "playwright test --project='Mobile Chrome' --project='Mobile Safari'",
+    "test:e2e:report": "playwright show-report",
+    "test:all": "npm run test && npm run test:e2e",
+    "test:ci": "vitest run --coverage && playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@preact/preset-vite": "^2.8.0",
+    "@testing-library/preact": "^3.2.3",
+    "@types/node": "^20.10.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "fake-indexeddb": "^5.0.0",
+    "jsdom": "^23.0.0",
+    "vitest": "^1.0.0"
+  },
+  "notes": {
+    "vitest": "Unit testing framework with Jest-compatible API",
+    "playwright": "E2E testing framework with multi-browser support",
+    "fake-indexeddb": "IndexedDB mock for testing storage",
+    "jsdom": "DOM implementation for Node.js testing",
+    "@vitest/coverage-v8": "Code coverage using V8's built-in coverage",
+    "@vitest/ui": "Interactive UI for viewing test results"
+  },
+  "commands": {
+    "install-test-deps": "npm install -D vitest @vitest/coverage-v8 @vitest/ui jsdom fake-indexeddb @playwright/test @testing-library/preact",
+    "install-playwright-browsers": "npx playwright install"
+  }
+}

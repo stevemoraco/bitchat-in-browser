@@ -1,0 +1,118 @@
+{
+  "name": "BitChat In Browser",
+  "short_name": "BitChat",
+  "description": "Encrypted mesh messaging via web browser",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#00ff00",
+  "background_color": "#0a0a0a",
+  "lang": "en-US",
+  "dir": "ltr",
+  "categories": ["social", "communication"],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "./screenshots/screenshot-narrow.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "BitChat channels view on mobile"
+    },
+    {
+      "src": "./screenshots/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "BitChat channels view on desktop"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Channels",
+      "short_name": "Channels",
+      "description": "View location-based and public channels",
+      "url": "./?view=channels",
+      "icons": [{ "src": "./icons/shortcut-channels.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Messages",
+      "short_name": "Messages",
+      "description": "View direct messages",
+      "url": "./?view=messages",
+      "icons": [{ "src": "./icons/shortcut-messages.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Peers",
+      "short_name": "Peers",
+      "description": "View discovered peers",
+      "url": "./?view=peers",
+      "icons": [{ "src": "./icons/shortcut-peers.png", "sizes": "96x96" }]
+    }
+  ],
+  "share_target": {
+    "action": "./?share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": ["image/*", "text/*"]
+        }
+      ]
+    }
+  },
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
+  "handle_links": "preferred",
+  "id": "bitchat-pwa",
+  "protocol_handlers": [
+    {
+      "protocol": "web+nostr",
+      "url": "./?nostr=%s"
+    }
+  ]
+}

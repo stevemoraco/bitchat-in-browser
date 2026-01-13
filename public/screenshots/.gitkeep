@@ -1,0 +1,11 @@
+# Screenshots for PWA install prompt
+#
+# Generate these screenshots at the following sizes:
+#
+# screenshot-narrow.png (540x960) - Mobile view
+# screenshot-wide.png (1280x720) - Desktop view
+#
+# Use the running app to capture these:
+# 1. Run: npm run dev
+# 2. Navigate to channels view
+# 3. Use browser dev tools to capture at correct sizes

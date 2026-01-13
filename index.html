@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json" />
+
+    <!-- Primary Meta Tags -->
+    <title>BitChat In Browser</title>
+    <meta name="title" content="BitChat In Browser" />
+    <meta name="description" content="Encrypted mesh messaging. No tracking. Your keys, your messages." />
+    <meta name="application-name" content="BitChat" />
+
+    <!-- Theme Color - Android Chrome -->
+    <meta name="theme-color" content="#00ff00" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#00ff00" media="(prefers-color-scheme: light)" />
+    <meta name="msapplication-TileColor" content="#0a0a0a" />
+    <meta name="msapplication-navbutton-color" content="#00ff00" />
+
+    <!-- iOS Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="BitChat" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- iOS Touch Icons -->
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="76x76" href="./icons/icon-192.png" />
+
+    <!-- iOS Splash Screens -->
+    <!-- iPhone 14 Pro Max (1290x2796) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-1290x2796.png"
+          media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" />
+    <!-- iPhone 14 Pro (1179x2556) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-1179x2556.png"
+          media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" />
+    <!-- iPhone 14 Plus, 13 Pro Max, 12 Pro Max (1284x2778) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-1284x2778.png"
+          media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" />
+    <!-- iPhone 14, 13, 13 Pro, 12, 12 Pro (1170x2532) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-1170x2532.png"
+          media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" />
+    <!-- iPhone 13 mini, 12 mini (1080x2340) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-1080x2340.png"
+          media="(device-width: 360px) and (device-height: 780px) and (-webkit-device-pixel-ratio: 3)" />
+    <!-- iPhone 11 Pro Max, XS Max (1242x2688) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-1242x2688.png"
+          media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" />
+    <!-- iPhone 11, XR (828x1792) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-828x1792.png"
+          media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" />
+    <!-- iPhone 11 Pro, X, XS (1125x2436) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-1125x2436.png"
+          media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" />
+    <!-- iPhone 8 Plus (1242x2208) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-1242x2208.png"
+          media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)" />
+    <!-- iPhone 8, 7, 6s, 6, SE 2nd/3rd gen (750x1334) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-750x1334.png"
+          media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
+    <!-- iPhone SE 1st gen, iPod Touch (640x1136) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-640x1136.png"
+          media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
+    <!-- iPad Pro 12.9" (2048x2732) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-2048x2732.png"
+          media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
+    <!-- iPad Pro 11" (1668x2388) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-1668x2388.png"
+          media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" />
+    <!-- iPad Pro 10.5" (1668x2224) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-1668x2224.png"
+          media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)" />
+    <!-- iPad Air, iPad 9.7" (1536x2048) -->
+    <link rel="apple-touch-startup-image"
+          href="./splash/splash-1536x2048.png"
+          media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="./icons/icon-192.png" />
+
+    <!-- Windows/Microsoft -->
+    <meta name="msapplication-TileImage" content="./icons/icon-192.png" />
+    <meta name="msapplication-config" content="./browserconfig.xml" />
+
+    <!-- Security -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="no-referrer" />
+
+    <!-- SEO & Social (minimal, privacy-focused) -->
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="BitChat In Browser" />
+    <meta property="og:description" content="Encrypted mesh messaging. No tracking. Your keys, your messages." />
+    <meta property="og:image" content="./icons/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
+
+    <!-- Preconnect to potential relay hosts (commented out to preserve privacy) -->
+    <!-- <link rel="preconnect" href="https://relay.damus.io" /> -->
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="./icons/icon-192.png" as="image" />
+  </head>
+  <body class="bg-terminal-bg text-terminal-green">
+    <!-- App container -->
+    <div id="app"></div>
+
+    <!-- Fallback for no-JS -->
+    <noscript>
+      <div style="padding: 2rem; text-align: center; font-family: monospace; background: #0a0a0a; color: #00ff41; min-height: 100vh;">
+        <h1>BitChat In Browser</h1>
+        <p>JavaScript is required for this encrypted messaging app.</p>
+        <p>Please enable JavaScript and reload.</p>
+      </div>
+    </noscript>
+
+    <!-- Entry point -->
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>

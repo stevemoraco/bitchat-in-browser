@@ -1,0 +1,71 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Playwright
+playwright-report/
+playwright/.cache/
+test-results/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+*.tsbuildinfo
+
+# IPFS deployment
+.ipfs/
+ipfs-cid.txt
+
+# Debug
+debug/
+*.dump
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Secrets (extra cautious)
+*.pem
+*.key
+*.secret
+credentials.json
+secrets.json

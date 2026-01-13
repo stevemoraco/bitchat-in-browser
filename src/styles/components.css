@@ -1,0 +1,617 @@
+/* BitChat In Browser - Component Styles */
+/* Terminal aesthetic matching iOS/Android apps */
+
+/* ==========================================================================
+   Terminal Input Component
+   ========================================================================== */
+
+.terminal-input {
+  @apply w-full bg-background text-text font-mono;
+  @apply border border-muted rounded-terminal;
+  @apply px-3 py-2;
+  @apply transition-colors duration-150;
+  @apply placeholder:text-muted;
+}
+
+.terminal-input:hover {
+  @apply border-primary/50;
+}
+
+.terminal-input:focus {
+  @apply border-primary;
+  @apply outline-none;
+  box-shadow: 0 0 0 1px theme('colors.primary');
+}
+
+.terminal-input:disabled {
+  @apply opacity-50 cursor-not-allowed;
+  @apply bg-surface;
+}
+
+/* Input with prefix (for command input) */
+.terminal-input-wrapper {
+  @apply relative flex items-center;
+  @apply bg-background border border-muted rounded-terminal;
+  @apply transition-colors duration-150;
+}
+
+.terminal-input-wrapper:focus-within {
+  @apply border-primary;
+  box-shadow: 0 0 0 1px theme('colors.primary');
+}
+
+.terminal-input-prefix {
+  @apply text-primary font-mono pl-3;
+  @apply select-none;
+}
+
+.terminal-input-field {
+  @apply flex-1 bg-transparent text-text font-mono;
+  @apply px-2 py-2;
+  @apply border-none outline-none;
+  @apply placeholder:text-muted;
+}
+
+/* Textarea variant */
+.terminal-textarea {
+  @apply terminal-input;
+  @apply resize-none min-h-[80px];
+}
+
+/* ==========================================================================
+   Message Bubble Component
+   ========================================================================== */
+
+.message-bubble {
+  @apply max-w-[85%] px-3 py-2;
+  @apply rounded-terminal;
+  @apply font-mono text-terminal-sm;
+  @apply animate-terminal-fade-in;
+}
+
+/* Incoming message (from others) */
+.message-bubble-incoming {
+  @apply message-bubble;
+  @apply bg-surface text-text;
+  @apply mr-auto;
+  border-left: 2px solid theme('colors.muted');
+}
+
+/* Outgoing message (from self) */
+.message-bubble-outgoing {
+  @apply message-bubble;
+  @apply bg-surface text-text;
+  @apply ml-auto;
+  border-left: 2px solid theme('colors.primary');
+}
+
+/* System message */
+.message-bubble-system {
+  @apply message-bubble;
+  @apply bg-transparent text-muted text-center;
+  @apply mx-auto italic;
+  @apply text-terminal-xs;
+}
+
+/* Error message */
+.message-bubble-error {
+  @apply message-bubble;
+  @apply bg-surface text-error;
+  @apply mx-auto;
+  border-left: 2px solid theme('colors.error');
+}
+
+/* Message metadata */
+.message-meta {
+  @apply flex items-center gap-2 mt-1;
+  @apply text-terminal-xs text-muted;
+}
+
+.message-sender {
+  @apply text-primary font-medium;
+}
+
+.message-timestamp {
+  @apply text-muted;
+}
+
+/* Message status indicators */
+.message-status {
+  @apply inline-flex items-center;
+}
+
+.message-status-pending {
+  @apply text-muted;
+}
+
+.message-status-sent {
+  @apply text-primary;
+}
+
+.message-status-failed {
+  @apply text-error;
+}
+
+/* ==========================================================================
+   Channel Item Component
+   ========================================================================== */
+
+.channel-item {
+  @apply flex items-center gap-3 px-3 py-2;
+  @apply bg-transparent;
+  @apply border-l-2 border-transparent;
+  @apply cursor-pointer;
+  @apply transition-all duration-150;
+  @apply font-mono;
+}
+
+.channel-item:hover {
+  @apply bg-surface;
+  @apply border-l-muted;
+}
+
+.channel-item:active {
+  @apply bg-surface/80;
+}
+
+/* Active/selected channel */
+.channel-item-active {
+  @apply channel-item;
+  @apply bg-surface;
+  @apply border-l-primary;
+}
+
+.channel-item-active:hover {
+  @apply border-l-primary;
+}
+
+/* Channel icon */
+.channel-icon {
+  @apply w-5 h-5 flex-shrink-0;
+  @apply text-muted;
+}
+
+.channel-item-active .channel-icon {
+  @apply text-primary;
+}
+
+/* Channel name */
+.channel-name {
+  @apply flex-1 truncate;
+  @apply text-terminal-sm text-text;
+}
+
+.channel-item-active .channel-name {
+  @apply text-primary;
+}
+
+/* Channel badge (unread count) */
+.channel-badge {
+  @apply min-w-[18px] h-[18px] px-1;
+  @apply flex items-center justify-center;
+  @apply bg-primary text-background;
+  @apply text-terminal-xs font-bold;
+  @apply rounded-full;
+}
+
+/* Channel location (geohash) */
+.channel-location {
+  @apply text-terminal-xs text-muted;
+  @apply truncate;
+}
+
+/* ==========================================================================
+   Peer Item Component
+   ========================================================================== */
+
+.peer-item {
+  @apply flex items-center gap-3 px-3 py-2;
+  @apply bg-transparent;
+  @apply cursor-pointer;
+  @apply transition-all duration-150;
+  @apply font-mono;
+}
+
+.peer-item:hover {
+  @apply bg-surface;
+}
+
+.peer-item:active {
+  @apply bg-surface/80;
+}
+
+/* Selected peer */
+.peer-item-selected {
+  @apply peer-item;
+  @apply bg-surface;
+}
+
+/* Peer avatar */
+.peer-avatar {
+  @apply w-8 h-8 flex-shrink-0;
+  @apply flex items-center justify-center;
+  @apply bg-surface rounded-full;
+  @apply text-primary text-terminal-sm font-bold;
+  @apply border border-muted;
+}
+
+.peer-avatar-online {
+  @apply border-primary;
+}
+
+/* Peer info */
+.peer-info {
+  @apply flex-1 min-w-0;
+}
+
+.peer-name {
+  @apply text-terminal-sm text-text truncate;
+}
+
+.peer-pubkey {
+  @apply text-terminal-xs text-muted truncate;
+  font-family: monospace;
+}
+
+/* Peer status indicator */
+.peer-status {
+  @apply w-2 h-2 rounded-full flex-shrink-0;
+}
+
+.peer-status-online {
+  @apply bg-primary;
+  box-shadow: 0 0 6px theme('colors.primary');
+}
+
+.peer-status-offline {
+  @apply bg-muted;
+}
+
+.peer-status-connecting {
+  @apply bg-secondary;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Peer connection type badge */
+.peer-connection-badge {
+  @apply text-terminal-xs px-1.5 py-0.5;
+  @apply rounded-terminal;
+  @apply uppercase tracking-wider;
+}
+
+.peer-connection-relay {
+  @apply bg-surface text-muted;
+}
+
+.peer-connection-p2p {
+  @apply bg-primary/20 text-primary;
+}
+
+/* ==========================================================================
+   Button Components
+   ========================================================================== */
+
+.btn-terminal {
+  @apply inline-flex items-center justify-center gap-2;
+  @apply px-4 py-2;
+  @apply bg-transparent text-primary font-mono;
+  @apply border border-primary rounded-terminal;
+  @apply cursor-pointer;
+  @apply transition-all duration-150;
+}
+
+.btn-terminal:hover {
+  @apply bg-primary text-background;
+}
+
+.btn-terminal:active {
+  @apply bg-primary/80;
+}
+
+.btn-terminal:disabled {
+  @apply opacity-50 cursor-not-allowed;
+  @apply hover:bg-transparent hover:text-primary;
+}
+
+.btn-terminal-secondary {
+  @apply btn-terminal;
+  @apply text-secondary border-secondary;
+}
+
+.btn-terminal-secondary:hover {
+  @apply bg-secondary text-background;
+}
+
+.btn-terminal-danger {
+  @apply btn-terminal;
+  @apply text-error border-error;
+}
+
+.btn-terminal-danger:hover {
+  @apply bg-error text-background;
+}
+
+.btn-terminal-ghost {
+  @apply btn-terminal;
+  @apply border-transparent text-muted;
+}
+
+.btn-terminal-ghost:hover {
+  @apply bg-surface text-text border-transparent;
+}
+
+/* Small button variant */
+.btn-terminal-sm {
+  @apply px-2 py-1 text-terminal-sm;
+}
+
+/* ==========================================================================
+   Card Components
+   ========================================================================== */
+
+.card-terminal {
+  @apply bg-surface rounded-terminal;
+  @apply border border-muted;
+  @apply p-4;
+}
+
+.card-terminal-highlight {
+  @apply card-terminal;
+  @apply border-primary;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.1);
+}
+
+/* ==========================================================================
+   Divider Components
+   ========================================================================== */
+
+.divider-terminal {
+  @apply w-full h-px bg-muted/50;
+}
+
+.divider-terminal-label {
+  @apply flex items-center gap-4;
+  @apply text-terminal-xs text-muted;
+}
+
+.divider-terminal-label::before,
+.divider-terminal-label::after {
+  content: '';
+  @apply flex-1 h-px bg-muted/50;
+}
+
+/* ==========================================================================
+   Loading States
+   ========================================================================== */
+
+.loading-dots {
+  @apply inline-flex gap-1;
+}
+
+.loading-dots span {
+  @apply w-1.5 h-1.5 bg-primary rounded-full;
+  animation: loading-bounce 1.4s ease-in-out infinite both;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes loading-bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* Terminal cursor loading */
+.loading-cursor {
+  @apply inline-block w-2 h-4 bg-primary;
+  animation: cursor-blink 1s step-end infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Empty States
+   ========================================================================== */
+
+.empty-state {
+  @apply flex flex-col items-center justify-center;
+  @apply py-12 px-4;
+  @apply text-center;
+}
+
+.empty-state-icon {
+  @apply w-12 h-12 mb-4;
+  @apply text-muted;
+}
+
+.empty-state-title {
+  @apply text-terminal-lg text-text mb-2;
+}
+
+.empty-state-description {
+  @apply text-terminal-sm text-muted;
+  @apply max-w-sm;
+}
+
+/* ==========================================================================
+   Modal & Overlay Components
+   ========================================================================== */
+
+.modal-overlay {
+  @apply fixed inset-0;
+  @apply bg-background/90;
+  @apply backdrop-blur-sm;
+  @apply flex items-center justify-center;
+  @apply p-4;
+  @apply z-50;
+}
+
+.modal-content {
+  @apply bg-surface;
+  @apply border border-primary;
+  @apply rounded-terminal;
+  @apply max-w-md w-full;
+  @apply max-h-[90vh] overflow-y-auto;
+  box-shadow: 0 0 30px rgba(0, 255, 0, 0.2);
+}
+
+.modal-header {
+  @apply flex items-center justify-between;
+  @apply px-4 py-3;
+  @apply border-b border-muted;
+}
+
+.modal-title {
+  @apply text-terminal-lg text-primary font-bold;
+}
+
+.modal-close {
+  @apply w-8 h-8;
+  @apply flex items-center justify-center;
+  @apply text-muted hover:text-text;
+  @apply cursor-pointer;
+  @apply transition-colors;
+}
+
+.modal-body {
+  @apply p-4;
+}
+
+.modal-footer {
+  @apply flex items-center justify-end gap-3;
+  @apply px-4 py-3;
+  @apply border-t border-muted;
+}
+
+/* ==========================================================================
+   Toast Notifications
+   ========================================================================== */
+
+.toast {
+  @apply flex items-center gap-3;
+  @apply px-4 py-3;
+  @apply bg-surface;
+  @apply border-l-4 border-primary;
+  @apply rounded-terminal;
+  @apply shadow-terminal;
+  @apply font-mono text-terminal-sm;
+}
+
+.toast-success {
+  @apply toast;
+  @apply border-l-success;
+}
+
+.toast-error {
+  @apply toast;
+  @apply border-l-error;
+}
+
+.toast-warning {
+  @apply toast;
+  @apply border-l-secondary;
+}
+
+/* ==========================================================================
+   Form Components
+   ========================================================================== */
+
+.form-label {
+  @apply block mb-1;
+  @apply text-terminal-sm text-muted;
+  @apply font-mono;
+}
+
+.form-hint {
+  @apply mt-1;
+  @apply text-terminal-xs text-muted;
+}
+
+.form-error {
+  @apply mt-1;
+  @apply text-terminal-xs text-error;
+}
+
+.form-group {
+  @apply mb-4;
+}
+
+/* ==========================================================================
+   Toggle/Switch Component
+   ========================================================================== */
+
+.toggle {
+  @apply relative inline-flex items-center;
+  @apply w-10 h-5;
+  @apply bg-surface;
+  @apply border border-muted;
+  @apply rounded-full;
+  @apply cursor-pointer;
+  @apply transition-colors duration-150;
+}
+
+.toggle-checked {
+  @apply bg-primary/20 border-primary;
+}
+
+.toggle-thumb {
+  @apply absolute left-0.5;
+  @apply w-4 h-4;
+  @apply bg-muted;
+  @apply rounded-full;
+  @apply transition-all duration-150;
+}
+
+.toggle-checked .toggle-thumb {
+  @apply left-[calc(100%-18px)] bg-primary;
+}
+
+/* ==========================================================================
+   Command Autocomplete
+   ========================================================================== */
+
+.autocomplete-dropdown {
+  @apply absolute bottom-full left-0 right-0;
+  @apply mb-1;
+  @apply bg-surface;
+  @apply border border-muted rounded-terminal;
+  @apply max-h-48 overflow-y-auto;
+  @apply shadow-terminal;
+}
+
+.autocomplete-item {
+  @apply flex items-center justify-between;
+  @apply px-3 py-2;
+  @apply text-terminal-sm;
+  @apply cursor-pointer;
+  @apply transition-colors;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item-active {
+  @apply bg-primary/10;
+}
+
+.autocomplete-command {
+  @apply text-primary font-mono;
+}
+
+.autocomplete-description {
+  @apply text-muted text-terminal-xs;
+}

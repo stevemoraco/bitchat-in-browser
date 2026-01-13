@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Offline - BitChat</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --text-primary: #00ff00;
+      --text-secondary: #33cc33;
+      --text-dim: #1a661a;
+      --border-color: #1a331a;
+      --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Consolas', monospace;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 400px;
+      width: 100%;
+    }
+
+    .icon {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+      opacity: 0.9;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    .title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .message {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 2rem;
+    }
+
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #cc3300;
+      animation: blink 1s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .retry-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.875rem 2rem;
+      background-color: transparent;
+      border: 2px solid var(--text-primary);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .retry-button:hover {
+      background-color: var(--text-primary);
+      color: var(--bg-primary);
+    }
+
+    .retry-button:active {
+      transform: scale(0.98);
+    }
+
+    .retry-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .retry-button.loading .spinner {
+      display: inline-block;
+    }
+
+    .spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .tips {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .tips h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+    }
+
+    .tips ul {
+      list-style: none;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-align: left;
+    }
+
+    .tips li {
+      padding: 0.375rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+
+    .tips li::before {
+      content: '>';
+      position: absolute;
+      left: 0;
+      color: var(--text-secondary);
+    }
+
+    .footer {
+      position: fixed;
+      bottom: 1rem;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+    }
+
+    /* ASCII art background decoration */
+    .decoration {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      font-size: 0.6rem;
+      color: var(--border-color);
+      white-space: pre;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Online status change - auto-reload after delay */
+    .online-notice {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 0.75rem;
+      background-color: #1a331a;
+      color: var(--text-primary);
+      text-align: center;
+      font-size: 0.8rem;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        transform: translateY(-100%);
+      }
+      to {
+        transform: translateY(0);
+      }
+    }
+
+    body.is-online .online-notice {
+      display: block;
+    }
+
+    body.is-online .status-indicator {
+      background-color: var(--text-primary);
+      animation: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="decoration">
++------------------+
+|    BITCHAT       |
+|    OFFLINE       |
++------------------+
+  </div>
+
+  <div class="online-notice" id="onlineNotice">
+    Connection restored! Reloading...
+  </div>
+
+  <div class="container">
+    <div class="icon">&#x1F4E1;</div>
+
+    <h1 class="title">You're Offline</h1>
+
+    <p class="message">
+      Unable to connect to the network. Your messages are safely stored and will sync when you're back online.
+    </p>
+
+    <div class="status">
+      <span class="status-indicator"></span>
+      <span id="statusText">No network connection</span>
+    </div>
+
+    <button class="retry-button" id="retryButton" onclick="retry()">
+      <span class="spinner"></span>
+      <span>Retry Connection</span>
+    </button>
+
+    <div class="tips">
+      <h3>Quick Tips</h3>
+      <ul>
+        <li>Check your WiFi or mobile data connection</li>
+        <li>Move closer to your router or hotspot</li>
+        <li>Try toggling airplane mode on and off</li>
+        <li>Your queued messages will send automatically</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    BitChat In Browser &bull; Encrypted Mesh Messaging
+  </div>
+
+  <script>
+    const retryButton = document.getElementById('retryButton');
+    const statusText = document.getElementById('statusText');
+    let retryCount = 0;
+    let isRetrying = false;
+
+    function retry() {
+      if (isRetrying) return;
+
+      isRetrying = true;
+      retryButton.classList.add('loading');
+      retryButton.disabled = true;
+      statusText.textContent = 'Checking connection...';
+
+      // Try to fetch a small resource
+      fetch('./?_=' + Date.now(), {
+        method: 'HEAD',
+        cache: 'no-store'
+      })
+        .then(response => {
+          if (response.ok) {
+            statusText.textContent = 'Connected! Reloading...';
+            setTimeout(() => {
+              window.location.replace('./');
+            }, 500);
+          } else {
+            throw new Error('Not connected');
+          }
+        })
+        .catch(() => {
+          retryCount++;
+          statusText.textContent = 'Still offline (attempt ' + retryCount + ')';
+          isRetrying = false;
+          retryButton.classList.remove('loading');
+          retryButton.disabled = false;
+        });
+    }
+
+    // Auto-reload when back online
+    window.addEventListener('online', () => {
+      document.body.classList.add('is-online');
+      statusText.textContent = 'Connection restored!';
+
+      // Wait a moment then reload
+      setTimeout(() => {
+        window.location.replace('./');
+      }, 1500);
+    });
+
+    // Update status when offline
+    window.addEventListener('offline', () => {
+      document.body.classList.remove('is-online');
+      statusText.textContent = 'No network connection';
+    });
+
+    // Check initial state
+    if (navigator.onLine) {
+      // Might be online but failed - could be captive portal or server issue
+      statusText.textContent = 'Network available, but unable to reach server';
+    }
+
+    // Keyboard shortcut - Enter to retry
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !retryButton.disabled) {
+        retry();
+      }
+    });
+  </script>
+</body>
+</html>

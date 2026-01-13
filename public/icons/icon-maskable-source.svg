@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Terminal green gradient -->
+    <linearGradient id="terminalGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ff00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00cc00;stop-opacity:1" />
+    </linearGradient>
+    <!-- Subtle glow effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background fills entire canvas for maskable safe area -->
+  <rect width="512" height="512" fill="#0a0a0a"/>
+
+  <!-- Safe area circle (for reference - 80% of icon) -->
+  <!-- Content should be within 256px diameter centered circle -->
+
+  <!-- Centered terminal window (smaller for maskable safe area) -->
+  <g transform="translate(96, 96) scale(0.625)">
+    <!-- Terminal window frame -->
+    <rect x="56" y="80" width="400" height="352" rx="12" ry="12" fill="#1a1a1a" stroke="#00ff00" stroke-width="3"/>
+
+    <!-- Title bar -->
+    <rect x="56" y="80" width="400" height="40" rx="12" ry="12" fill="#1a1a1a"/>
+    <rect x="56" y="108" width="400" height="12" fill="#1a1a1a"/>
+
+    <!-- Window buttons -->
+    <circle cx="88" cy="100" r="10" fill="#ff5f56"/>
+    <circle cx="120" cy="100" r="10" fill="#ffbd2e"/>
+    <circle cx="152" cy="100" r="10" fill="#27c93f"/>
+
+    <!-- Title text -->
+    <text x="256" y="106" text-anchor="middle" fill="#00ff00" font-family="monospace" font-size="16" font-weight="bold">BitChat</text>
+
+    <!-- Chat content area -->
+    <g filter="url(#glow)">
+      <!-- Prompt symbol -->
+      <text x="80" y="170" fill="#00ff00" font-family="monospace" font-size="24" font-weight="bold">&gt;_</text>
+
+      <!-- Chat bubbles / lines representing messages -->
+      <!-- Incoming message -->
+      <rect x="80" y="190" width="220" height="32" rx="4" fill="#00ff00" fill-opacity="0.15" stroke="#00ff00" stroke-width="2"/>
+      <text x="94" y="212" fill="#00ff00" font-family="monospace" font-size="14">encrypted message</text>
+
+      <!-- Outgoing message -->
+      <rect x="160" y="236" width="260" height="32" rx="4" fill="#00ff00" fill-opacity="0.25" stroke="#00ff00" stroke-width="2"/>
+      <text x="174" y="258" fill="#00ff00" font-family="monospace" font-size="14">p2p mesh active</text>
+
+      <!-- Another incoming -->
+      <rect x="80" y="282" width="200" height="32" rx="4" fill="#00ff00" fill-opacity="0.15" stroke="#00ff00" stroke-width="2"/>
+      <text x="94" y="304" fill="#00ff00" font-family="monospace" font-size="14">secure channel</text>
+
+      <!-- Input area -->
+      <rect x="80" y="350" width="340" height="44" rx="4" fill="none" stroke="#00ff00" stroke-width="2"/>
+      <text x="96" y="380" fill="#00ff00" font-family="monospace" font-size="18">&gt; |</text>
+
+      <!-- Lock icon representing encryption -->
+      <g transform="translate(380, 150)">
+        <rect x="0" y="12" width="36" height="28" rx="4" fill="none" stroke="#00ff00" stroke-width="2"/>
+        <path d="M6 12 V7 A12 12 0 0 1 30 7 V12" fill="none" stroke="#00ff00" stroke-width="2"/>
+        <circle cx="18" cy="26" r="4" fill="#00ff00"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Scanline effect overlay (subtle) -->
+  <defs>
+    <pattern id="scanlines" patternUnits="userSpaceOnUse" width="4" height="4">
+      <rect width="4" height="2" fill="rgba(0,0,0,0.02)"/>
+    </pattern>
+  </defs>
+  <rect width="512" height="512" fill="url(#scanlines)" pointer-events="none"/>
+</svg>

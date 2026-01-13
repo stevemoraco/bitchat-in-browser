@@ -1,0 +1,601 @@
+/**
+ * Accessibility Styles - BitChat In Browser
+ *
+ * WCAG 2.1 AA compliant accessibility styles including:
+ * - Skip links for keyboard navigation
+ * - Focus visible styles with high visibility
+ * - Reduced motion support
+ * - High contrast mode support
+ * - Screen reader only utilities
+ *
+ * Terminal green (#00ff00) on black (#0a0a0a) provides:
+ * - Contrast ratio: 15.3:1 (exceeds WCAG AAA requirement of 7:1)
+ *
+ * @module styles/a11y
+ */
+
+/* ==========================================================================
+   Screen Reader Only Utility
+   ========================================================================== */
+
+/**
+ * Visually hide content while keeping it accessible to screen readers.
+ * This is the modern, recommended approach that works across all browsers.
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/**
+ * Allow the element to be focusable when navigated to via tab key.
+ * Used for skip links and other initially hidden but focusable elements.
+ */
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* ==========================================================================
+   Skip Links Styles
+   ========================================================================== */
+
+/**
+ * Skip links container - positioned at the top of the viewport
+ */
+.skip-links {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  pointer-events: none;
+}
+
+/**
+ * Individual skip link - hidden until focused
+ */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0.5rem;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-background, #0a0a0a);
+  text-decoration: none;
+  background-color: var(--color-primary, #00ff00);
+  border: 2px solid var(--color-primary, #00ff00);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 255, 0, 0.4);
+  pointer-events: auto;
+  transition: top 0.2s ease-out;
+}
+
+/**
+ * Skip link visible on focus
+ */
+.skip-link:focus {
+  top: 0.5rem;
+  outline: none;
+  box-shadow: 0 4px 12px rgba(0, 255, 0, 0.4), 0 0 0 3px rgba(0, 255, 0, 0.3);
+}
+
+.skip-link:focus-visible {
+  top: 0.5rem;
+}
+
+/**
+ * Hover state for skip link
+ */
+.skip-link:hover {
+  background-color: #00cc00;
+  border-color: #00cc00;
+}
+
+/**
+ * Second skip link position adjustment
+ */
+.skip-link:nth-of-type(2) {
+  left: auto;
+  right: 0.5rem;
+}
+
+/* ==========================================================================
+   Focus Visible Styles
+   ========================================================================== */
+
+/**
+ * Remove default focus outline (will be replaced with custom styles)
+ */
+*:focus {
+  outline: none;
+}
+
+/**
+ * Custom focus-visible styles with high visibility
+ * Using box-shadow for a more prominent focus ring
+ */
+*:focus-visible {
+  outline: 2px solid var(--color-primary, #00ff00);
+  outline-offset: 2px;
+}
+
+/**
+ * Enhanced focus styles for interactive elements
+ */
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-primary, #00ff00);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 255, 0, 0.2);
+}
+
+/**
+ * Focus styles for form inputs
+ */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[contenteditable="true"]:focus-visible {
+  outline: none;
+  border-color: var(--color-primary, #00ff00);
+  box-shadow: 0 0 0 2px var(--color-primary, #00ff00),
+              inset 0 0 0 1px var(--color-primary, #00ff00);
+}
+
+/**
+ * Focus styles for checkboxes and radio buttons
+ */
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 2px solid var(--color-primary, #00ff00);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 255, 0, 0.2);
+}
+
+/**
+ * Focus within styles for containers with focusable children
+ */
+.focus-within-ring:focus-within {
+  outline: 2px solid var(--color-primary, #00ff00);
+  outline-offset: 2px;
+}
+
+/**
+ * Navigation item focus styles
+ */
+nav button:focus-visible,
+nav a:focus-visible,
+[role="navigation"] button:focus-visible,
+[role="navigation"] a:focus-visible {
+  outline: 2px solid var(--color-primary, #00ff00);
+  outline-offset: -2px;
+  background-color: rgba(0, 255, 0, 0.1);
+}
+
+/**
+ * Tab focus indicator (for tab panels)
+ */
+[role="tab"]:focus-visible {
+  outline: 2px solid var(--color-primary, #00ff00);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+/**
+ * Menu item focus styles
+ */
+[role="menuitem"]:focus-visible,
+[role="option"]:focus-visible,
+[role="listitem"]:focus-visible {
+  outline: none;
+  background-color: rgba(0, 255, 0, 0.15);
+  box-shadow: inset 3px 0 0 var(--color-primary, #00ff00);
+}
+
+/* ==========================================================================
+   Reduced Motion Support
+   ========================================================================== */
+
+/**
+ * Disable animations and transitions for users who prefer reduced motion.
+ * This respects the user's OS-level accessibility settings.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Keep skip link transition for accessibility */
+  .skip-link {
+    transition: none;
+  }
+
+  /* Disable loading animations */
+  .animate-spin,
+  .animate-pulse,
+  .animate-bounce,
+  .animate-cursor {
+    animation: none;
+  }
+
+  /* Use static indicators instead of animated ones */
+  .loading-indicator {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
+/**
+ * Allow users to opt back into motion via data attribute
+ */
+[data-allow-motion="true"] {
+  animation-duration: revert !important;
+  animation-iteration-count: revert !important;
+  transition-duration: revert !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode Support
+   ========================================================================== */
+
+/**
+ * Enhanced colors for users who prefer high contrast.
+ * Increases visibility while maintaining the terminal aesthetic.
+ */
+@media (prefers-contrast: high) {
+  :root {
+    --color-primary: #00ff00;
+    --color-background: #000000;
+    --color-text: #ffffff;
+    --color-muted: #bbbbbb;
+    --color-error: #ff5555;
+    --color-warning: #ffff00;
+    --color-success: #00ff00;
+  }
+
+  /* Increase border visibility */
+  * {
+    border-color: currentColor !important;
+  }
+
+  /* Ensure links are clearly distinguishable */
+  a {
+    text-decoration: underline !important;
+    text-decoration-thickness: 2px !important;
+  }
+
+  /* High contrast buttons */
+  button,
+  [role="button"] {
+    border: 2px solid currentColor !important;
+  }
+
+  /* High contrast inputs */
+  input,
+  textarea,
+  select {
+    border: 2px solid var(--color-text, #ffffff) !important;
+    background-color: var(--color-background, #000000) !important;
+  }
+
+  /* Ensure focus is extremely visible */
+  *:focus-visible {
+    outline-width: 3px !important;
+    outline-color: var(--color-primary, #00ff00) !important;
+    box-shadow: 0 0 0 5px rgba(0, 255, 0, 0.4) !important;
+  }
+
+  /* High visibility for error states */
+  .error,
+  [aria-invalid="true"] {
+    border-color: var(--color-error, #ff5555) !important;
+    outline: 2px solid var(--color-error, #ff5555) !important;
+  }
+
+  /* Disable transparency effects */
+  .bg-opacity-*,
+  .text-opacity-* {
+    opacity: 1 !important;
+  }
+}
+
+/**
+ * Forced colors mode (Windows High Contrast)
+ */
+@media (forced-colors: active) {
+  /* Use system colors */
+  .skip-link {
+    background-color: Highlight;
+    color: HighlightText;
+    border-color: ButtonText;
+  }
+
+  *:focus-visible {
+    outline: 3px solid Highlight !important;
+  }
+
+  button,
+  [role="button"] {
+    border: 2px solid ButtonText;
+  }
+
+  /* Ensure icon visibility */
+  svg {
+    forced-color-adjust: auto;
+  }
+}
+
+/* ==========================================================================
+   Accessible Color Utilities
+   ========================================================================== */
+
+/**
+ * Text colors that meet WCAG AA contrast requirements on dark background
+ * Terminal green (#00ff00) on black (#0a0a0a) = 15.3:1 contrast ratio
+ */
+.text-accessible {
+  color: var(--color-primary, #00ff00);
+}
+
+.text-accessible-muted {
+  color: #7fff7f; /* Lightened green, still meets AA on black */
+}
+
+.text-accessible-error {
+  color: #ff6666; /* Red that meets AA on black */
+}
+
+.text-accessible-warning {
+  color: #ffcc00; /* Yellow that meets AA on black */
+}
+
+/* ==========================================================================
+   Live Region Styles
+   ========================================================================== */
+
+/**
+ * Live regions for screen reader announcements
+ * These are visually hidden but announced by screen readers
+ */
+[aria-live] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/**
+ * Optional: visible live region for debugging
+ */
+[aria-live].visible {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 1rem;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  background-color: rgba(0, 0, 0, 0.9);
+  border: 1px solid var(--color-primary, #00ff00);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  z-index: 9999;
+}
+
+/* ==========================================================================
+   Loading States - Accessible Indicators
+   ========================================================================== */
+
+/**
+ * Loading state that works with screen readers
+ */
+.loading-accessible {
+  position: relative;
+}
+
+.loading-accessible::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: -0.75rem;
+  margin-left: -0.75rem;
+  border: 2px solid transparent;
+  border-top-color: var(--color-primary, #00ff00);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-accessible::after {
+    animation: none;
+    border-color: var(--color-primary, #00ff00);
+    opacity: 0.5;
+  }
+}
+
+/* ==========================================================================
+   Focus Management - Dialog & Modal Styles
+   ========================================================================== */
+
+/**
+ * Modal backdrop - prevents interaction with content behind
+ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  z-index: 50;
+}
+
+/**
+ * Modal container - receives focus trap
+ */
+.modal-container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 51;
+}
+
+/**
+ * Modal content - the actual dialog
+ */
+.modal-content {
+  position: relative;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+  background-color: var(--color-background, #0a0a0a);
+  border: 1px solid var(--color-primary, #00ff00);
+  border-radius: 4px;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+}
+
+/**
+ * Ensure modal title is announced
+ */
+.modal-content [role="dialog"] {
+  outline: none;
+}
+
+.modal-content [role="dialog"]:focus-visible {
+  outline: none;
+}
+
+/* ==========================================================================
+   Keyboard Interaction Indicators
+   ========================================================================== */
+
+/**
+ * Show keyboard shortcuts hint
+ */
+.kbd-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--color-muted, #666666);
+  background-color: rgba(0, 255, 0, 0.1);
+  border: 1px solid var(--color-muted, #666666);
+  border-radius: 3px;
+}
+
+/**
+ * Keyboard key indicator
+ */
+kbd {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-text, #e0e0e0);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   Touch Target Sizes
+   ========================================================================== */
+
+/**
+ * Ensure minimum touch target size of 44x44px (WCAG 2.1)
+ */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/**
+ * Larger touch targets for mobile
+ */
+@media (max-width: 768px) {
+  button,
+  [role="button"],
+  a,
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Ensure adequate spacing between touch targets */
+  nav button,
+  nav a {
+    padding: 0.75rem;
+  }
+}
+
+/* ==========================================================================
+   Selection & Caret Styles
+   ========================================================================== */
+
+/**
+ * High visibility text selection
+ */
+::selection {
+  background-color: var(--color-primary, #00ff00);
+  color: var(--color-background, #0a0a0a);
+}
+
+/**
+ * Caret color for inputs
+ */
+input,
+textarea,
+[contenteditable="true"] {
+  caret-color: var(--color-primary, #00ff00);
+}
