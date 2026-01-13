@@ -94,11 +94,11 @@ async function uploadToPinata(files: FileEntry[]): Promise<UploadResult> {
   // Create FormData for pinning
   const formData = new FormData();
 
-  // Add each file with directory structure preserved
+  // Add each file - use folder prefix for Pinata directory upload
+  // The folder name becomes the directory in the resulting CID
   for (const file of files) {
     const blob = new Blob([file.content]);
-    // Pinata expects files in format: file/path/to/file.ext
-    formData.append('file', blob, `${APP_NAME}/${file.path}`);
+    formData.append('file', blob, `website/${file.path}`);
   }
 
   // Add pinata metadata
@@ -112,9 +112,11 @@ async function uploadToPinata(files: FileEntry[]): Promise<UploadResult> {
   });
   formData.append('pinataMetadata', metadata);
 
-  // Add pinata options for directory wrapping
+  // wrapWithDirectory: false means CID points to the 'website' folder directly
+  // So index.html will be at CID/index.html
   const options = JSON.stringify({
-    wrapWithDirectory: true,
+    wrapWithDirectory: false,
+    cidVersion: 1,
   });
   formData.append('pinataOptions', options);
 
