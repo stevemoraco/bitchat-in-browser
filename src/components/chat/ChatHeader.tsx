@@ -8,7 +8,7 @@
  * - Back button for mobile
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import type { Channel, Peer } from '../../stores/types';
 
 // ============================================================================

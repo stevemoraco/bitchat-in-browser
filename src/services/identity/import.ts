@@ -197,7 +197,7 @@ function validateNsec(nsec: string): ImportValidation {
     return {
       valid: false,
       format: 'nsec',
-      error: 'Invalid nsec: ' + (error instanceof Error ? error.message : 'decode failed'),
+      error: `Invalid nsec: ${  error instanceof Error ? error.message : 'decode failed'}`,
     };
   }
 }
@@ -236,7 +236,7 @@ function validateHexKey(hex: string): ImportValidation {
     return {
       valid: false,
       format: 'hex',
-      error: 'Invalid private key: ' + (error instanceof Error ? error.message : 'key derivation failed'),
+      error: `Invalid private key: ${  error instanceof Error ? error.message : 'key derivation failed'}`,
     };
   }
 }
@@ -401,7 +401,7 @@ export async function importFromMnemonic(
 
     // BIP-39 seed derivation
     // Salt is "mnemonic" + passphrase (truncated to 16 bytes for pwhash)
-    const saltString = 'mnemonic' + passphrase;
+    const saltString = `mnemonic${  passphrase}`;
     const salt = sodium.from_string(saltString).slice(0, 16);
 
     // Derive seed using Argon2id (libsodium's pwhash)

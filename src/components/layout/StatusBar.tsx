@@ -10,7 +10,7 @@
  * Terminal-style status display with minimal footprint.
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useConnectionStatus } from '../../stores';
 
 // ============================================================================
@@ -38,8 +38,7 @@ interface NetworkStatusProps {
   isOnline: boolean;
 }
 
-const NetworkStatus: FunctionComponent<NetworkStatusProps> = ({ isOnline }) => {
-  return (
+const NetworkStatus: FunctionComponent<NetworkStatusProps> = ({ isOnline }) => (
     <div class="flex items-center gap-1.5">
       <div
         class={`w-1.5 h-1.5 rounded-full ${
@@ -55,7 +54,6 @@ const NetworkStatus: FunctionComponent<NetworkStatusProps> = ({ isOnline }) => {
       </span>
     </div>
   );
-};
 
 // ============================================================================
 // Relay Status

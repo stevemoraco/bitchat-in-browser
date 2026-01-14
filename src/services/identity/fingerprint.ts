@@ -424,7 +424,7 @@ export function generateRandomart(hash: Uint8Array, width = 17, height = 9): str
   const lines: string[] = [];
 
   // Top border
-  lines.push('+' + '-'.repeat(width) + '+');
+  lines.push(`+${  '-'.repeat(width)  }+`);
 
   // Field
   for (let row = 0; row < height; row++) {
@@ -445,7 +445,7 @@ export function generateRandomart(hash: Uint8Array, width = 17, height = 9): str
   }
 
   // Bottom border
-  lines.push('+' + '-'.repeat(width) + '+');
+  lines.push(`+${  '-'.repeat(width)  }+`);
 
   return lines.join('\n');
 }

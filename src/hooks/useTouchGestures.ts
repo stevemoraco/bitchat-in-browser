@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
-import { RefObject } from 'preact';
+import type { RefObject } from 'preact';
 
 // ============================================================================
 // Types
@@ -168,10 +168,10 @@ export function useSwipeGesture(
       if (absX > absY) {
         const direction = deltaX > 0 ? 'right' : 'left';
         return directions.includes(direction) ? direction : null;
-      } else {
+      } 
         const direction = deltaY > 0 ? 'down' : 'up';
         return directions.includes(direction) ? direction : null;
-      }
+      
     },
     [directions]
   );
@@ -703,9 +703,7 @@ export function useLongPress(
   );
 
   // Cleanup timer on unmount
-  useEffect(() => {
-    return () => clearTimer();
-  }, [clearTimer]);
+  useEffect(() => () => clearTimer(), [clearTimer]);
 
   return {
     handlers: {

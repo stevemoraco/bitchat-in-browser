@@ -5,12 +5,12 @@
  * Fetches Open Graph metadata when available.
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useCallback } from 'preact/hooks';
 import {
   fetchLinkPreview,
-  LinkPreviewData,
   sanitizeUrl,
+  type LinkPreviewData
 } from '../../services/formatting/renderer';
 
 // ============================================================================
@@ -134,7 +134,7 @@ export const LinkPreview: FunctionComponent<LinkPreviewProps> = ({
   // Truncate description
   const truncatedDescription =
     data?.description && data.description.length > maxDescriptionLength
-      ? data.description.slice(0, maxDescriptionLength).trim() + '...'
+      ? `${data.description.slice(0, maxDescriptionLength).trim()  }...`
       : data?.description;
 
   // Container classes

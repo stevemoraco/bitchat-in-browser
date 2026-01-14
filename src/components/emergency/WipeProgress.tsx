@@ -12,7 +12,7 @@
  * @module components/emergency/WipeProgress
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import { type WipeProgress, type WipeStep } from '../../features/emergency/wipe';
 

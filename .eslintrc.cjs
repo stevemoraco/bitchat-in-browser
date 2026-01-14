@@ -62,8 +62,7 @@ module.exports = {
     'prefer-const': 'error',
     'prefer-template': 'warn',
 
-    // Preact specific
-    'preact/prefer-stateless-function': 'warn'
+    // Preact specific - prefer-stateless-function not available in eslint-plugin-preact 0.1.0
   },
   overrides: [
     {

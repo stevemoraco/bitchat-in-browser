@@ -5,7 +5,7 @@
  * and a copy button. Supports optional syntax highlighting.
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback, useMemo, useRef } from 'preact/hooks';
 import { escapeHtml, sanitizeText } from '../../services/formatting/renderer';
 
@@ -431,9 +431,7 @@ export const CodeBlock: FunctionComponent<CodeBlockProps> = ({
   );
 
   // Highlight each line
-  const highlightedLines = useMemo(() => {
-    return lines.map((line) => highlightCode(line, normalizedLang));
-  }, [lines, normalizedLang]);
+  const highlightedLines = useMemo(() => lines.map((line) => highlightCode(line, normalizedLang)), [lines, normalizedLang]);
 
   // Copy handler
   const handleCopy = useCallback(async () => {
@@ -610,8 +608,7 @@ export const TerminalOutput: FunctionComponent<{
   output: string;
   command?: string;
   className?: string;
-}> = ({ output, command, className = '' }) => {
-  return (
+}> = ({ output, command, className = '' }) => (
     <div
       class={`terminal-output border border-terminal-green/30 rounded overflow-hidden bg-black/50 ${className}`}
     >
@@ -626,7 +623,6 @@ export const TerminalOutput: FunctionComponent<{
       </pre>
     </div>
   );
-};
 
 /**
  * Diff display

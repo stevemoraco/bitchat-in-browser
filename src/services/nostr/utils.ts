@@ -132,7 +132,7 @@ export function signEvent(
       content: event.content,
     },
     privKeyBytes
-  ) as VerifiedEvent;
+  );
 
   return signedEvent as NostrEvent;
 }

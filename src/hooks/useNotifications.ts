@@ -15,17 +15,17 @@
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
 import {
   getNotificationService,
-  NotificationService,
-  NotificationPermission,
-  NotificationCapabilities,
-  NotificationEvent,
-  NotificationEventListener,
+  type NotificationService,
+  type NotificationPermission,
+  type NotificationCapabilities,
+  type NotificationEvent,
+  type NotificationEventListener
 } from '../services/notifications';
 import {
   showMessageNotification,
   clearChannelNotifications,
   clearAllNotifications,
-  MessageNotificationOptions,
+  type MessageNotificationOptions
 } from '../services/notifications/local';
 import { useTotalUnreadCount } from '../stores/messages-store';
 import { useSettingsStore } from '../stores/settings-store';

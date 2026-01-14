@@ -9,7 +9,7 @@
  * - Quick execution
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'preact/hooks';
 import {
   getCommandsByCategory,
@@ -17,8 +17,7 @@ import {
   type Command,
   type CommandCategory,
 } from '../../services/commands';
-import { getUniqueRecentCommands } from '../../services/commands/executor';
-import { executeCommand, formatTerminalOutput } from '../../services/commands/executor';
+import { getUniqueRecentCommands, executeCommand, formatTerminalOutput } from '../../services/commands/executor';
 
 // ============================================================================
 // Types
@@ -84,9 +83,7 @@ export const CommandPalette: FunctionComponent<CommandPaletteProps> = ({
   const listRef = useRef<HTMLDivElement>(null);
 
   // Get recent commands
-  const recentCommands = useMemo(() => {
-    return getUniqueRecentCommands(5);
-  }, [isOpen]); // Refresh when opened
+  const recentCommands = useMemo(() => getUniqueRecentCommands(5), [isOpen]); // Refresh when opened
 
   // Filter and group commands based on search query
   const { filteredCommands, flatList } = useMemo(() => {
@@ -182,9 +179,7 @@ export const CommandPalette: FunctionComponent<CommandPaletteProps> = ({
       try {
         // Execute with just the command name (user can add args later)
         const result = await executeCommand(`/${command.name}`, {
-          onConfirm: async (message) => {
-            return window.confirm(message);
-          },
+          onConfirm: async (message) => window.confirm(message),
         });
 
         const outputLines = formatTerminalOutput(result);
@@ -222,9 +217,7 @@ export const CommandPalette: FunctionComponent<CommandPaletteProps> = ({
 
       try {
         const result = await executeCommand(commandString, {
-          onConfirm: async (message) => {
-            return window.confirm(message);
-          },
+          onConfirm: async (message) => window.confirm(message),
         });
 
         const outputLines = formatTerminalOutput(result);
@@ -480,8 +473,7 @@ export function useCommandPalette(): {
 export const CommandPaletteButton: FunctionComponent<{
   onClick: () => void;
   className?: string;
-}> = ({ onClick, className = '' }) => {
-  return (
+}> = ({ onClick, className = '' }) => (
     <button
       type="button"
       onClick={onClick}
@@ -495,6 +487,5 @@ export const CommandPaletteButton: FunctionComponent<{
       </kbd>
     </button>
   );
-};
 
 export default CommandPalette;

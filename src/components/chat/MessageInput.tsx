@@ -1,20 +1,35 @@
 /**
- * MessageInput - Text input component for composing messages
+ * MessageInput - iOS-style text input component for composing messages
+ *
+ * Layout:
+ * ┌──────────────────────────────────────────────────────────────┐
+ * │ [+] │ Type a message...                       │ [mic] [send]│
+ * └──────────────────────────────────────────────────────────────┘
  *
  * Features:
- * - Text input with auto-resize
- * - Send button
- * - Character counter
+ * - Plus button opens attachment picker
+ * - Text input with auto-resize (up to 4 lines)
+ * - Voice button when input is empty
+ * - Send button when input has content (animated transition)
  * - Reply preview when replying
  * - Offline indicator
  * - Responsive: sticky bottom on mobile with safe area
  * - Keyboard-aware height adjustment
+ * - Command autocomplete (/ prefix)
+ * - Mention autocomplete (@ prefix)
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useRef, useEffect, useCallback } from 'preact/hooks';
 import type { ReplyMessage } from './MessageBubble';
 import { useIsMobile, useIsKeyboardOpen, useSafeAreaInsets, useIsLandscape } from '../../hooks/useMediaQuery';
+import { useNavigationStore, type SheetType } from '../../stores/navigation-store';
+import { usePeers } from '../../stores/peers-store';
+import { CommandAutocomplete, isCommandInput, extractCommandQuery, isCommandComplete, type Command } from './CommandAutocomplete';
+import { MentionAutocomplete, shouldShowMentionAutocomplete, extractMentionQuery, completeMention, extractMentions } from './MentionAutocomplete';
+import { VoiceRecorder } from './VoiceRecorder';
+import { VoiceRecorderService } from '../../services/media/voice-recorder';
+import type { Peer } from '../../stores/types';
 
 // ============================================================================
 // Types
@@ -22,7 +37,11 @@ import { useIsMobile, useIsKeyboardOpen, useSafeAreaInsets, useIsLandscape } fro
 
 export interface MessageInputProps {
   /** Callback when a message is sent */
-  onSend: (content: string) => void;
+  onSend: (content: string, mentions?: string[]) => void;
+  /** Callback when a voice message is recorded */
+  onVoiceSend?: (blob: Blob, duration: number, waveform: number[]) => void;
+  /** Callback when a command is executed */
+  onCommand?: (command: string, args: string) => void;
   /** Whether the user is currently offline */
   isOffline?: boolean;
   /** Reply message being composed */
@@ -39,9 +58,23 @@ export interface MessageInputProps {
   isSending?: boolean;
 }
 
+/** Autocomplete mode */
+type AutocompleteMode = 'none' | 'command' | 'mention';
+
 // ============================================================================
 // Icons
 // ============================================================================
+
+const PlusIcon: FunctionComponent<{ class?: string }> = ({ class: className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    class={className}
+  >
+    <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+  </svg>
+);
 
 const SendIcon: FunctionComponent<{ class?: string }> = ({ class: className }) => (
   <svg
@@ -51,6 +84,18 @@ const SendIcon: FunctionComponent<{ class?: string }> = ({ class: className }) =
     class={className}
   >
     <path d="M3.105 2.289a.75.75 0 00-.826.95l1.414 4.925A1.5 1.5 0 005.135 9.25h6.115a.75.75 0 010 1.5H5.135a1.5 1.5 0 00-1.442 1.086l-1.414 4.926a.75.75 0 00.826.95 28.896 28.896 0 0015.293-7.154.75.75 0 000-1.115A28.897 28.897 0 003.105 2.289z" />
+  </svg>
+);
+
+const MicrophoneIcon: FunctionComponent<{ class?: string }> = ({ class: className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    class={className}
+  >
+    <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" />
+    <path d="M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z" />
   </svg>
 );
 
@@ -101,8 +146,10 @@ const ReplyIcon: FunctionComponent<{ class?: string }> = ({ class: className }) 
 // ============================================================================
 
 const DEFAULT_MAX_LENGTH = 2000;
-const MIN_HEIGHT = 40;
-const MAX_HEIGHT = 150;
+const MIN_HEIGHT = 36; // Slightly smaller for iOS-style
+const MAX_LINES = 4;
+const LINE_HEIGHT = 22; // Approximate line height
+const MAX_HEIGHT = MIN_HEIGHT + (MAX_LINES - 1) * LINE_HEIGHT; // ~102px for 4 lines
 
 // ============================================================================
 // Component
@@ -110,6 +157,8 @@ const MAX_HEIGHT = 150;
 
 export const MessageInput: FunctionComponent<MessageInputProps> = ({
   onSend,
+  onVoiceSend,
+  onCommand,
   isOffline = false,
   replyTo = null,
   onCancelReply,
@@ -119,13 +168,43 @@ export const MessageInput: FunctionComponent<MessageInputProps> = ({
   isSending = false,
 }) => {
   const [content, setContent] = useState('');
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const [autocompleteMode, setAutocompleteMode] = useState<AutocompleteMode>('none');
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const openSheet = useNavigationStore((state) => state.openSheet);
+
+  // Check if voice recording is supported
+  const voiceSupported = VoiceRecorderService.isSupported();
+
+  // Get peers for mention autocomplete
+  const peers = usePeers();
 
   // Responsive hooks
   const isMobile = useIsMobile();
   const isKeyboardOpen = useIsKeyboardOpen();
   const safeAreaInsets = useSafeAreaInsets();
   const isLandscape = useIsLandscape();
+
+  // Determine autocomplete mode based on input
+  useEffect(() => {
+    // Check for command input (/ at start)
+    if (isCommandInput(content) && !isCommandComplete(content)) {
+      setAutocompleteMode('command');
+      setSelectedIndex(0);
+      return;
+    }
+
+    // Check for mention input (@ trigger)
+    if (shouldShowMentionAutocomplete(content, cursorPosition)) {
+      setAutocompleteMode('mention');
+      setSelectedIndex(0);
+      return;
+    }
+
+    setAutocompleteMode('none');
+  }, [content, cursorPosition]);
 
   // Auto-resize textarea
   const adjustHeight = useCallback(() => {
@@ -135,7 +214,7 @@ export const MessageInput: FunctionComponent<MessageInputProps> = ({
     // Reset height to calculate scroll height
     textarea.style.height = `${MIN_HEIGHT}px`;
 
-    // Set new height based on content
+    // Set new height based on content (max 4 lines)
     const newHeight = Math.min(textarea.scrollHeight, MAX_HEIGHT);
     textarea.style.height = `${newHeight}px`;
   }, []);
@@ -157,7 +236,14 @@ export const MessageInput: FunctionComponent<MessageInputProps> = ({
     const target = e.target as HTMLTextAreaElement;
     if (target.value.length <= maxLength) {
       setContent(target.value);
+      setCursorPosition(target.selectionStart || 0);
     }
+  };
+
+  // Track cursor position on selection change
+  const handleSelect = (e: Event) => {
+    const target = e.target as HTMLTextAreaElement;
+    setCursorPosition(target.selectionStart || 0);
   };
 
   // Handle send
@@ -165,8 +251,32 @@ export const MessageInput: FunctionComponent<MessageInputProps> = ({
     const trimmed = content.trim();
     if (!trimmed || disabled || isSending) return;
 
-    onSend(trimmed);
+    // Check if this is a command
+    if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+      const spaceIndex = trimmed.indexOf(' ');
+      const commandName = spaceIndex === -1 ? trimmed.slice(1) : trimmed.slice(1, spaceIndex);
+      const args = spaceIndex === -1 ? '' : trimmed.slice(spaceIndex + 1);
+
+      if (onCommand) {
+        onCommand(commandName, args);
+      }
+
+      setContent('');
+      setAutocompleteMode('none');
+
+      // Reset textarea height
+      if (textareaRef.current) {
+        textareaRef.current.style.height = `${MIN_HEIGHT}px`;
+      }
+      return;
+    }
+
+    // Extract mentions from content
+    const mentions = extractMentions(trimmed, peers);
+
+    onSend(trimmed, mentions.length > 0 ? mentions : undefined);
     setContent('');
+    setAutocompleteMode('none');
 
     // Reset textarea height
     if (textareaRef.current) {
@@ -174,8 +284,60 @@ export const MessageInput: FunctionComponent<MessageInputProps> = ({
     }
   };
 
+  // Handle command selection from autocomplete
+  const handleCommandSelect = (command: Command) => {
+    if (command.requiresArg) {
+      // Insert command with space for argument
+      setContent(`/${command.name} `);
+      setCursorPosition(`/${command.name} `.length);
+    } else {
+      // Execute command immediately
+      setContent(`/${command.name}`);
+    }
+    setAutocompleteMode('none');
+
+    // Focus back to input
+    textareaRef.current?.focus();
+  };
+
+  // Handle mention selection from autocomplete
+  const handleMentionSelect = (peer: Peer) => {
+    const result = completeMention(content, cursorPosition, peer.nickname);
+    setContent(result.text);
+    setCursorPosition(result.cursorPosition);
+    setAutocompleteMode('none');
+
+    // Set cursor position after React updates
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.selectionStart = result.cursorPosition;
+        textareaRef.current.selectionEnd = result.cursorPosition;
+        textareaRef.current.focus();
+      }
+    }, 0);
+  };
+
+  // Dismiss autocomplete
+  const dismissAutocomplete = () => {
+    setAutocompleteMode('none');
+    textareaRef.current?.focus();
+  };
+
   // Handle keyboard shortcuts
   const handleKeyDown = (e: KeyboardEvent) => {
+    // If autocomplete is active, let it handle navigation keys
+    if (autocompleteMode !== 'none') {
+      if (['ArrowUp', 'ArrowDown', 'Tab', 'Escape'].includes(e.key)) {
+        // These are handled by the AutocompletePopup component
+        return;
+      }
+      // Enter sends/selects when autocomplete is active
+      if (e.key === 'Enter' && !e.shiftKey) {
+        // Let AutocompletePopup handle Enter for selection
+        return;
+      }
+    }
+
     // Send on Enter (without Shift)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -183,30 +345,72 @@ export const MessageInput: FunctionComponent<MessageInputProps> = ({
     }
 
     // Cancel reply on Escape
-    if (e.key === 'Escape' && replyTo && onCancelReply) {
-      onCancelReply();
+    if (e.key === 'Escape') {
+      if (autocompleteMode !== 'none') {
+        dismissAutocomplete();
+      } else if (replyTo && onCancelReply) {
+        onCancelReply();
+      }
     }
   };
 
-  const canSend = content.trim().length > 0 && !disabled && !isSending;
-  const characterCount = content.length;
-  const showCharacterWarning = characterCount > maxLength * 0.9;
+  // Handle plus button click - opens attachment picker
+  const handlePlusClick = () => {
+    // For now, open a custom sheet as placeholder
+    // The attachment-picker sheet type can be added later
+    openSheet('custom' as SheetType, {
+      title: 'Attachments',
+      height: 'half',
+      props: { type: 'attachment-picker' },
+    });
+  };
+
+  // Handle voice button click - start recording
+  const handleVoiceClick = () => {
+    if (!voiceSupported || disabled) return;
+    setIsRecordingVoice(true);
+  };
+
+  // Handle voice recording complete
+  const handleVoiceRecordingComplete = (blob: Blob, duration: number, waveform: number[]) => {
+    setIsRecordingVoice(false);
+    if (onVoiceSend) {
+      onVoiceSend(blob, duration, waveform);
+    }
+  };
+
+  // Handle voice recording cancel
+  const handleVoiceRecordingCancel = () => {
+    setIsRecordingVoice(false);
+  };
+
+  const hasContent = content.trim().length > 0;
+  const canSend = hasContent && !disabled && !isSending;
 
   // Adjust max height based on orientation and keyboard state
   const effectiveMaxHeight = isLandscape && isMobile ? 60 : MAX_HEIGHT;
 
-  // Container classes for mobile/desktop
-  const containerClasses = `
-    border-t border-muted bg-background
-    ${isMobile && !isKeyboardOpen ? 'safe-bottom' : ''}
-    ${isKeyboardOpen ? 'keyboard-open' : ''}
-  `;
-
   // Calculate bottom padding for safe area
   const bottomPadding = isMobile && !isKeyboardOpen ? safeAreaInsets.bottom : 0;
 
+  // Show voice recorder when recording
+  if (isRecordingVoice) {
+    return (
+      <div style={{ paddingBottom: bottomPadding > 0 ? `${bottomPadding}px` : undefined }}>
+        <VoiceRecorder
+          onRecordingComplete={handleVoiceRecordingComplete}
+          onCancel={handleVoiceRecordingCancel}
+          disabled={disabled}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div class={containerClasses} style={{ paddingBottom: bottomPadding > 0 ? `${bottomPadding}px` : undefined }}>
+    <div
+      class="border-t border-muted bg-background"
+      style={{ paddingBottom: bottomPadding > 0 ? `${bottomPadding}px` : undefined }}
+    >
       {/* Offline indicator */}
       {isOffline && (
         <div class="flex items-center gap-2 px-3 py-1.5 bg-error/10 border-b border-error/30">
@@ -245,59 +449,118 @@ export const MessageInput: FunctionComponent<MessageInputProps> = ({
         </div>
       )}
 
-      {/* Input area */}
+      {/* Input area - iOS style layout */}
       <div class={`flex items-end gap-2 ${isLandscape && isMobile ? 'p-1.5' : 'p-2'}`}>
-        {/* Text input */}
+        {/* Plus button - attachment picker */}
+        <button
+          type="button"
+          onClick={handlePlusClick}
+          disabled={disabled}
+          class={`flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full transition-all touch-target ${
+            disabled
+              ? 'bg-surface text-muted cursor-not-allowed'
+              : 'bg-surface text-muted hover:text-text hover:bg-terminal-gray active:bg-terminal-gray'
+          }`}
+          aria-label="Add attachment"
+        >
+          <PlusIcon class="w-5 h-5" />
+        </button>
+
+        {/* Text input with autocomplete */}
         <div class="flex-1 relative">
+          {/* Command Autocomplete Popup */}
+          <CommandAutocomplete
+            query={extractCommandQuery(content)}
+            selectedIndex={selectedIndex}
+            onSelect={handleCommandSelect}
+            onIndexChange={setSelectedIndex}
+            onDismiss={dismissAutocomplete}
+            isVisible={autocompleteMode === 'command'}
+          />
+
+          {/* Mention Autocomplete Popup */}
+          <MentionAutocomplete
+            query={extractMentionQuery(content, cursorPosition)}
+            peers={peers}
+            selectedIndex={selectedIndex}
+            onSelect={handleMentionSelect}
+            onIndexChange={setSelectedIndex}
+            onDismiss={dismissAutocomplete}
+            isVisible={autocompleteMode === 'mention'}
+          />
+
           <textarea
             ref={textareaRef}
             value={content}
             onInput={handleChange}
             onKeyDown={handleKeyDown}
+            onSelect={handleSelect}
+            onClick={handleSelect}
             placeholder={placeholder}
             disabled={disabled}
-            class="w-full bg-surface text-text font-mono text-terminal-sm border border-muted rounded-terminal px-3 py-2 resize-none focus:border-primary focus:outline-none transition-colors placeholder:text-muted disabled:opacity-50 disabled:cursor-not-allowed message-input-landscape"
+            class="w-full bg-surface text-text font-mono text-terminal-sm rounded-2xl px-4 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-muted disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               minHeight: `${MIN_HEIGHT}px`,
               maxHeight: `${effectiveMaxHeight}px`,
             }}
             rows={1}
           />
-
-          {/* Character counter - hide on small screens when not needed */}
-          {showCharacterWarning && !isLandscape && (
-            <div
-              class={`absolute bottom-1 right-2 text-terminal-xs font-mono ${
-                characterCount >= maxLength ? 'text-error' : 'text-muted'
-              }`}
-            >
-              {characterCount}/{maxLength}
-            </div>
-          )}
         </div>
 
-        {/* Send button - larger touch target on mobile */}
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={!canSend}
-          class={`flex-shrink-0 ${isMobile ? 'w-11 h-11' : 'w-10 h-10'} flex items-center justify-center rounded-terminal border transition-all touch-target ${
-            canSend
-              ? 'bg-primary border-primary text-background hover:bg-primary/80 active:bg-primary/60'
-              : 'bg-surface border-muted text-muted cursor-not-allowed'
-          }`}
-          aria-label="Send message"
-        >
-          {isSending ? (
-            <span class="loading-dots">
-              <span></span>
-              <span></span>
-              <span></span>
-            </span>
-          ) : (
-            <SendIcon class="w-5 h-5" />
+        {/* Right side buttons container */}
+        <div class="flex items-center gap-1 flex-shrink-0">
+          {/* Voice button - visible when input is empty and voice is supported */}
+          {voiceSupported && (
+            <button
+              type="button"
+              onClick={handleVoiceClick}
+              disabled={disabled}
+              class={`w-9 h-9 flex items-center justify-center rounded-full transition-all touch-target ${
+                hasContent ? 'hidden' : ''
+              } ${
+                disabled
+                  ? 'bg-surface text-muted cursor-not-allowed'
+                  : 'bg-surface text-muted hover:text-text hover:bg-terminal-gray active:bg-terminal-gray'
+              }`}
+              aria-label="Record voice message"
+              style={{
+                opacity: hasContent ? 0 : 1,
+                pointerEvents: hasContent ? 'none' : 'auto',
+              }}
+            >
+              <MicrophoneIcon class="w-5 h-5" />
+            </button>
           )}
-        </button>
+
+          {/* Send button - visible when input has content */}
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={!canSend}
+            class={`w-9 h-9 flex items-center justify-center rounded-full transition-all touch-target ${
+              hasContent ? '' : 'hidden'
+            } ${
+              canSend
+                ? 'bg-primary text-background hover:bg-primary/80 active:bg-primary/60'
+                : 'bg-surface text-muted cursor-not-allowed'
+            }`}
+            aria-label="Send message"
+            style={{
+              opacity: hasContent ? 1 : 0,
+              pointerEvents: hasContent ? 'auto' : 'none',
+            }}
+          >
+            {isSending ? (
+              <span class="loading-dots">
+                <span />
+                <span />
+                <span />
+              </span>
+            ) : (
+              <SendIcon class="w-5 h-5" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Keyboard hint - only on desktop */}

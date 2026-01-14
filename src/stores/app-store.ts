@@ -118,19 +118,15 @@ export const selectVersion = (state: AppStore) => state.version;
 /**
  * Hook to check if app is ready for use
  */
-export const useIsAppReady = () => {
-  return useAppStore((state) => state.isInitialized && !state.error);
-};
+export const useIsAppReady = () => useAppStore((state) => state.isInitialized && !state.error);
 
 /**
  * Hook to get connection status info
  */
-export const useConnectionStatus = () => {
-  return useAppStore((state) => ({
+export const useConnectionStatus = () => useAppStore((state) => ({
     isOnline: state.isOnline,
     isBackground: state.isBackground,
   }));
-};
 
 // ============================================================================
 // Initialize network listeners

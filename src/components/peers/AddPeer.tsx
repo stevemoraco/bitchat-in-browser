@@ -7,7 +7,7 @@
  * - NFC scan (if available)
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
 import { usePeersStore, createPeer, peerExists } from '../../stores/peers-store';
 
@@ -471,7 +471,7 @@ export const AddPeer: FunctionComponent<AddPeerProps> = ({ onComplete, onCancel 
 
       try {
         // Clean and validate the data
-        let publicKey = data.trim().replace(/\s/g, '');
+        const publicKey = data.trim().replace(/\s/g, '');
 
         // Handle npub format - in production, you would decode this
         // For now, we'll generate a fingerprint from it

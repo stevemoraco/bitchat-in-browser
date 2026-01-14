@@ -191,6 +191,49 @@ export {
 } from './identity-store';
 
 // ============================================================================
+// Mesh Store
+// ============================================================================
+
+export {
+  useMeshStore,
+  useMeshStatus,
+  useMeshPeers,
+  useMeshPeerCount,
+  useMeshConfig,
+  useMeshTopology,
+  useMeshActions,
+  getMeshStatus,
+  getMeshPeers,
+  getMeshPeerCount,
+  getMeshPeer,
+  isMeshConnected,
+} from './mesh-store';
+
+export type { TopologyMode, MeshTopologyStats, MeshState } from './mesh-store';
+
+// ============================================================================
+// Navigation Store
+// ============================================================================
+
+export {
+  useNavigationStore,
+  useCurrentSheet,
+  useIsSheetOpen,
+  useSheetStack,
+  useNavigationActions,
+  getNavigationState,
+  isAnySheetOpen,
+  getCurrentSheetType,
+} from './navigation-store';
+
+export type {
+  SheetType,
+  SheetHeight,
+  SheetState,
+  NavigationState,
+} from './navigation-store';
+
+// ============================================================================
 // Utility Functions
 // ============================================================================
 
@@ -205,6 +248,7 @@ export function clearAllStores(): void {
   const { usePeersStore } = require('./peers-store');
   const { useSettingsStore } = require('./settings-store');
   const { useIdentityStore } = require('./identity-store');
+  const { useMeshStore } = require('./mesh-store');
 
   useAppStore.getState().reset();
   useMessagesStore.getState().clearAll();
@@ -212,6 +256,7 @@ export function clearAllStores(): void {
   usePeersStore.getState().clearAll();
   useSettingsStore.getState().resetSettings();
   useIdentityStore.getState().clearIdentity();
+  useMeshStore.getState().reset();
 
   // Clear localStorage
   if (typeof localStorage !== 'undefined') {
@@ -220,6 +265,7 @@ export function clearAllStores(): void {
     localStorage.removeItem('bitchat-peers');
     localStorage.removeItem('bitchat-settings');
     localStorage.removeItem('bitchat-identity');
+    localStorage.removeItem('bitchat-mesh-store');
   }
 }
 

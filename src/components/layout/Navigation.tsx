@@ -15,7 +15,7 @@
  * - Responsive layout (bottom tabs on mobile, sidebar on desktop)
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useCallback, useRef } from 'preact/hooks';
 import { useAppStore } from '../../stores';
 import type { ViewType } from '../../stores/types';
@@ -404,8 +404,6 @@ export const Navigation: FunctionComponent<NavigationProps> = ({
 // Desktop Tab Bar (Alternative horizontal layout)
 // ============================================================================
 
-export const TabBar: FunctionComponent<NavigationProps> = (props) => {
-  return <Navigation {...props} position="top" />;
-};
+export const TabBar: FunctionComponent<NavigationProps> = (props) => <Navigation {...props} position="top" />;
 
 export default Navigation;

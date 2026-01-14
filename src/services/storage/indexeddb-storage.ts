@@ -531,7 +531,7 @@ export class IndexedDBStorage implements StorageAdapter {
             await dexieTable.clear();
           }
 
-          await dexieTable.bulkPut(data[tableName]!);
+          await dexieTable.bulkPut(data[tableName]);
         }
       }
     });

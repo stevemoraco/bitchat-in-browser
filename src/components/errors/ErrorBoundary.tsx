@@ -7,7 +7,7 @@
  * @module components/errors/ErrorBoundary
  */
 
-import { Component, ComponentChildren, FunctionComponent } from 'preact';
+import { Component, type ComponentChildren, type FunctionComponent } from 'preact';
 import { useState, useCallback } from 'preact/hooks';
 import {
   ErrorSeverity,
@@ -370,9 +370,9 @@ export const FullPageError: FunctionComponent<FullPageErrorProps> = ({
         <ErrorDisplay
           error={error}
           errorInfo={errorInfo}
-          showDetails={true}
-          allowRetry={true}
-          allowReport={true}
+          showDetails
+          allowRetry
+          allowReport
           onRetry={onRetry}
           onReload={handleReload}
         />

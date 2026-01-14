@@ -12,11 +12,12 @@
  * @module services/notifications/local
  */
 
-import {
-  getNotificationService,
+import type {
   NotificationService,
   ShowNotificationOptions,
-  NotificationData,
+  NotificationData} from './index';
+import {
+  getNotificationService
 } from './index';
 import type { Message, Peer, Channel } from '../../stores/types';
 import { useSettingsStore } from '../../stores/settings-store';
@@ -88,7 +89,7 @@ function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
     return text;
   }
-  return text.substring(0, maxLength - 3) + '...';
+  return `${text.substring(0, maxLength - 3)  }...`;
 }
 
 /**

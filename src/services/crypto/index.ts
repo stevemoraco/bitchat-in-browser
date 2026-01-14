@@ -118,7 +118,7 @@ import {
   generateRandomId,
   generateRandomIdHex,
 } from './hash';
-import {
+import type {
   KeyPair,
   NostrKeyPair,
   EncryptedData,

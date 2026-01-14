@@ -8,6 +8,9 @@
 /* Import responsive design system */
 @import './responsive.css';
 
+/* Import animation system */
+@import './animations.css';
+
 /* Base styles for terminal aesthetic */
 @layer base {
   html {

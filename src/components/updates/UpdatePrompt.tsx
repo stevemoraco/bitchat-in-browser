@@ -10,7 +10,7 @@
  * @module components/updates/UpdatePrompt
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useCallback } from 'preact/hooks';
 
 // ============================================================================

@@ -378,8 +378,8 @@ export class MemoryTracker {
     const min = Math.min(...values);
     const max = Math.max(...values);
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
-    const current = values[values.length - 1]!;
-    const growth = values.length > 1 ? current - values[0]! : 0;
+    const current = values[values.length - 1];
+    const growth = values.length > 1 ? current - values[0] : 0;
 
     return { min, max, avg, current, growth };
   }
@@ -686,7 +686,7 @@ export async function getCoreWebVitals(): Promise<{
   // Get TTFB from navigation timing
   const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
   if (navEntries.length > 0) {
-    result.ttfb = navEntries[0]!.responseStart;
+    result.ttfb = navEntries[0].responseStart;
   }
 
   return result;

@@ -12,6 +12,8 @@
 export { Header } from './Header';
 export type { ConnectionState } from './Header';
 
+export { ChannelBadge } from './ChannelBadge';
+
 export { Navigation, TabBar } from './Navigation';
 
 export { StatusBar, CompactStatusBar } from './StatusBar';
@@ -37,3 +39,7 @@ export {
   HiddenOnMobile,
   HiddenOnDesktop,
 } from './ResponsiveContainer';
+
+export { SheetRenderer } from './SheetRenderer';
+
+export { MainLayout, AppHeader } from './MainLayout';

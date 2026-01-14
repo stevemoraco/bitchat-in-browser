@@ -12,7 +12,8 @@ import type {
   PublishResult,
   EventHandler,
 } from './types';
-import { RelayPool, DEFAULT_RELAYS, getDefaultPool } from './relays';
+import type { RelayPool} from './relays';
+import { DEFAULT_RELAYS, getDefaultPool } from './relays';
 import { OutboxQueue } from './queue';
 
 /**
@@ -90,9 +91,7 @@ export class NostrClient {
         storageKey: options.storageKeyPrefix
           ? `${options.storageKeyPrefix}_outbox_queue`
           : 'nostr_outbox_queue',
-        onFlush: async (event, relayUrls) => {
-          return this.publishDirect(event, relayUrls);
-        },
+        onFlush: async (event, relayUrls) => this.publishDirect(event, relayUrls),
       });
     }
 

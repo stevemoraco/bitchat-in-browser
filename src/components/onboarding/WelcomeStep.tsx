@@ -8,7 +8,7 @@
  * - "Import Existing Key" link for existing users
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 
 // ============================================================================
 // Types
@@ -28,8 +28,7 @@ export interface WelcomeStepProps {
 export const WelcomeStep: FunctionComponent<WelcomeStepProps> = ({
   onGetStarted,
   onImportKey,
-}) => {
-  return (
+}) => (
     <div class="text-center">
       {/* Logo */}
       <div class="mb-8">
@@ -108,6 +107,5 @@ export const WelcomeStep: FunctionComponent<WelcomeStepProps> = ({
       </p>
     </div>
   );
-};
 
 export default WelcomeStep;

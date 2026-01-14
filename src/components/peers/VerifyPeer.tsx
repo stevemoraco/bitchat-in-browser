@@ -8,7 +8,7 @@
  * - Mark as verified button
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useMemo, useCallback } from 'preact/hooks';
 import { usePeersStore, usePeer } from '../../stores/peers-store';
 import { useIdentity } from '../../stores/identity-store';
@@ -43,11 +43,11 @@ const QRCodeDisplay: FunctionComponent<QRCodeDisplayProps> = ({
   data,
   size = 200,
   label,
-}) => {
+}) => 
   // In production, you would use a QR code library like qrcode-generator
   // For now, we display a placeholder with a simulated QR pattern
 
-  return (
+   (
     <div class="flex flex-col items-center">
       {label && (
         <span class="text-terminal-xs text-muted uppercase tracking-wider mb-2">
@@ -77,8 +77,8 @@ const QRCodeDisplay: FunctionComponent<QRCodeDisplayProps> = ({
         Scan this code with another device to verify
       </p>
     </div>
-  );
-};
+  )
+;
 
 // ============================================================================
 // Fingerprint Comparison Component
@@ -273,8 +273,7 @@ interface SuccessViewProps {
   onDone: () => void;
 }
 
-const SuccessView: FunctionComponent<SuccessViewProps> = ({ peerNickname, onDone }) => {
-  return (
+const SuccessView: FunctionComponent<SuccessViewProps> = ({ peerNickname, onDone }) => (
     <div class="text-center py-8">
       <div
         class="inline-flex items-center justify-center w-20 h-20 bg-terminal-green/10 rounded-full mb-6"
@@ -315,7 +314,6 @@ const SuccessView: FunctionComponent<SuccessViewProps> = ({ peerNickname, onDone
       </style>
     </div>
   );
-};
 
 // ============================================================================
 // VerifyPeer Component

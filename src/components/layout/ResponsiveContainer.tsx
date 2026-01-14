@@ -13,7 +13,7 @@
  * - Support for swipe navigation on mobile
  */
 
-import { FunctionComponent, ComponentChildren } from 'preact';
+import type { FunctionComponent, ComponentChildren } from 'preact';
 import { useRef, useMemo } from 'preact/hooks';
 import {
   useResponsive,

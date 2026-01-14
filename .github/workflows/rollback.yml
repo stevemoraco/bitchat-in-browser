@@ -1,0 +1,313 @@
+name: Automatic Rollback
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      auto:
+        description: 'Auto-rollback based on canary failure rate'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      target_cid:
+        description: 'Specific CID to rollback to (optional)'
+        required: false
+        type: string
+      reason:
+        description: 'Reason for rollback'
+        required: false
+        default: 'Manual rollback'
+        type: string
+      dry_run:
+        description: 'Dry run (no ENS update)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+  # Triggered by canary workflow
+  repository_dispatch:
+    types: [trigger-rollback]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  check-rollback:
+    name: Check Rollback Conditions
+    runs-on: ubuntu-latest
+    outputs:
+      should_rollback: ${{ steps.check.outputs.should_rollback }}
+      target_cid: ${{ steps.check.outputs.target_cid }}
+      current_cid: ${{ steps.check.outputs.current_cid }}
+      failure_rate: ${{ steps.check.outputs.failure_rate }}
+      reason: ${{ steps.check.outputs.reason }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download deployment history
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-history
+          path: .
+        continue-on-error: true
+
+      - name: Download canary history
+        uses: actions/download-artifact@v4
+        with:
+          name: canary-history
+          path: .
+        continue-on-error: true
+
+      - name: Check rollback conditions
+        id: check
+        run: |
+          # If specific target CID is provided
+          if [ -n "${{ github.event.inputs.target_cid }}" ]; then
+            echo "should_rollback=true" >> $GITHUB_OUTPUT
+            echo "target_cid=${{ github.event.inputs.target_cid }}" >> $GITHUB_OUTPUT
+            echo "reason=${{ github.event.inputs.reason || 'Manual rollback to specific CID' }}" >> $GITHUB_OUTPUT
+
+            if [ -f deployment-history.json ]; then
+              CURRENT=$(jq -r '.currentCid // ""' deployment-history.json)
+              echo "current_cid=${CURRENT}" >> $GITHUB_OUTPUT
+            fi
+            echo "failure_rate=N/A" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check if auto rollback or manual
+          if [ "${{ github.event.inputs.auto }}" = "true" ] || [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            # Run rollback check script
+            npx tsx scripts/rollback.ts check --json > rollback-check.json 2>&1 || true
+            cat rollback-check.json
+
+            SHOULD=$(jq -r '.shouldRollback // false' rollback-check.json)
+            TARGET=$(jq -r '.targetCid // ""' rollback-check.json)
+            CURRENT=$(jq -r '.currentCid // ""' rollback-check.json)
+            RATE=$(jq -r '.failureRate // 0' rollback-check.json)
+            REASON=$(jq -r '.reason // ""' rollback-check.json)
+
+            echo "should_rollback=${SHOULD}" >> $GITHUB_OUTPUT
+            echo "target_cid=${TARGET}" >> $GITHUB_OUTPUT
+            echo "current_cid=${CURRENT}" >> $GITHUB_OUTPUT
+            echo "failure_rate=${RATE}" >> $GITHUB_OUTPUT
+            echo "reason=${REASON}" >> $GITHUB_OUTPUT
+          else
+            # Manual rollback without auto check
+            if [ -f deployment-history.json ]; then
+              CURRENT=$(jq -r '.currentCid // ""' deployment-history.json)
+              # Get previous CID
+              TARGET=$(jq -r '[.entries[] | select(.status == "previous")] | last | .cid // ""' deployment-history.json)
+
+              if [ -n "$TARGET" ]; then
+                echo "should_rollback=true" >> $GITHUB_OUTPUT
+                echo "target_cid=${TARGET}" >> $GITHUB_OUTPUT
+                echo "current_cid=${CURRENT}" >> $GITHUB_OUTPUT
+                echo "reason=${{ github.event.inputs.reason || 'Manual rollback' }}" >> $GITHUB_OUTPUT
+                echo "failure_rate=N/A" >> $GITHUB_OUTPUT
+              else
+                echo "should_rollback=false" >> $GITHUB_OUTPUT
+                echo "reason=No previous deployment available" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "should_rollback=false" >> $GITHUB_OUTPUT
+              echo "reason=No deployment history found" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Update job summary with check results
+        run: |
+          SHOULD="${{ steps.check.outputs.should_rollback }}"
+          TARGET="${{ steps.check.outputs.target_cid }}"
+          CURRENT="${{ steps.check.outputs.current_cid }}"
+          RATE="${{ steps.check.outputs.failure_rate }}"
+          REASON="${{ steps.check.outputs.reason }}"
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          # Rollback Check Results
+
+          **Should Rollback:** ${SHOULD}
+          **Current CID:** \`${CURRENT:-Not set}\`
+          **Target CID:** \`${TARGET:-Not available}\`
+          **Failure Rate:** ${RATE}%
+          **Reason:** ${REASON}
+
+          ---
+          EOF
+
+  execute-rollback:
+    name: Execute Rollback
+    runs-on: ubuntu-latest
+    needs: check-rollback
+    if: ${{ needs.check-rollback.outputs.should_rollback == 'true' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download deployment history
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-history
+          path: .
+        continue-on-error: true
+
+      - name: Download canary history
+        uses: actions/download-artifact@v4
+        with:
+          name: canary-history
+          path: .
+        continue-on-error: true
+
+      - name: Confirm rollback parameters
+        run: |
+          echo "========================================="
+          echo "ROLLBACK CONFIRMATION"
+          echo "========================================="
+          echo "Current CID: ${{ needs.check-rollback.outputs.current_cid }}"
+          echo "Target CID:  ${{ needs.check-rollback.outputs.target_cid }}"
+          echo "Reason:      ${{ needs.check-rollback.outputs.reason }}"
+          echo "Dry Run:     ${{ github.event.inputs.dry_run }}"
+          echo "========================================="
+
+      - name: Execute rollback (dry run)
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        run: |
+          echo "DRY RUN MODE - No changes will be made"
+          npx tsx scripts/rollback.ts rollback --to "${{ needs.check-rollback.outputs.target_cid }}" --dry-run
+
+      - name: Execute rollback
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        env:
+          ENS_PRIVATE_KEY: ${{ secrets.ENS_PRIVATE_KEY }}
+          RPC_URL: ${{ secrets.RPC_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          npx tsx scripts/rollback.ts rollback --to "${{ needs.check-rollback.outputs.target_cid }}"
+
+      - name: Upload updated deployment history
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-history
+          path: deployment-history.json
+          retention-days: 90
+
+      - name: Update job summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          ## Rollback Executed
+
+          **Status:** :white_check_mark: Complete
+          **From CID:** \`${{ needs.check-rollback.outputs.current_cid }}\`
+          **To CID:** \`${{ needs.check-rollback.outputs.target_cid }}\`
+          **Reason:** ${{ needs.check-rollback.outputs.reason }}
+
+          ### Verification Links
+          - [eth.limo](https://bitbrowse.eth.limo)
+          - [IPFS Gateway](https://${{ needs.check-rollback.outputs.target_cid }}.ipfs.dweb.link)
+
+          ---
+          *Rollback completed at $(date -u +"%Y-%m-%d %H:%M:%S UTC")*
+          EOF
+
+      - name: Create rollback notification issue
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const currentCid = '${{ needs.check-rollback.outputs.current_cid }}';
+            const targetCid = '${{ needs.check-rollback.outputs.target_cid }}';
+            const reason = '${{ needs.check-rollback.outputs.reason }}';
+            const failureRate = '${{ needs.check-rollback.outputs.failure_rate }}';
+
+            const body = `## Rollback Executed
+
+            **Timestamp:** ${new Date().toISOString()}
+            **Trigger:** ${context.eventName === 'repository_dispatch' ? 'Automatic (Canary)' : 'Manual'}
+
+            ### Deployment Change
+            - **From:** \`${currentCid}\`
+            - **To:** \`${targetCid}\`
+
+            ### Reason
+            ${reason}
+
+            ### Metrics
+            - Failure Rate: ${failureRate}%
+
+            ### Verification
+            - [Live Site](https://bitbrowse.eth.limo)
+            - [IPFS Gateway](https://${targetCid}.ipfs.dweb.link)
+
+            ---
+
+            **Next Steps:**
+            1. Investigate the root cause of failures
+            2. Review changes in the rolled-back deployment
+            3. Fix issues before re-deploying
+
+            ---
+            *This issue was created automatically by the rollback system.*
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Rollback] Deployment rolled back - ${new Date().toISOString().split('T')[0]}`,
+              body: body,
+              labels: ['rollback', 'incident', 'automated']
+            });
+
+  no-rollback:
+    name: No Rollback Needed
+    runs-on: ubuntu-latest
+    needs: check-rollback
+    if: ${{ needs.check-rollback.outputs.should_rollback != 'true' }}
+
+    steps:
+      - name: Report no rollback needed
+        run: |
+          echo "No rollback needed"
+          echo "Reason: ${{ needs.check-rollback.outputs.reason }}"
+
+      - name: Update job summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          ## No Rollback Needed
+
+          **Status:** :white_check_mark: System Healthy
+          **Current CID:** \`${{ needs.check-rollback.outputs.current_cid }}\`
+          **Reason:** ${{ needs.check-rollback.outputs.reason }}
+
+          ---
+          *Checked at $(date -u +"%Y-%m-%d %H:%M:%S UTC")*
+          EOF

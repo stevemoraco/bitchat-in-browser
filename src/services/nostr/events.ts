@@ -616,7 +616,7 @@ export function signEvent(
       content: event.content,
     },
     privKeyBytes
-  ) as VerifiedEvent;
+  );
 
   return signedEvent as NostrEvent;
 }
@@ -771,7 +771,7 @@ export function getReplaceableEventId(event: NostrEvent | UnsignedNostrEvent): s
 
   // For non-replaceable events, use the event ID
   if ('id' in event) {
-    return (event as NostrEvent).id;
+    return (event).id;
   }
 
   // For unsigned events, calculate the would-be ID

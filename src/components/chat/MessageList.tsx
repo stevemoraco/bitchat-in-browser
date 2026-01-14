@@ -7,12 +7,17 @@
  * - Load more on scroll up
  * - Empty state
  * - Auto-scroll to bottom on new messages
+ * - Keyboard avoidance using visualViewport API
+ * - Smooth animations for message entry
+ * - Stagger effect for multiple messages loading
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'preact/hooks';
 import type { Message } from '../../stores/types';
-import { MessageBubble, DateSeparator, TypingIndicator, ReplyMessage } from './MessageBubble';
+import { IRCMessage, IRCDateSeparator, IRCTypingIndicator } from './IRCMessage';
+import { useKeyboardHeight } from '../../hooks/useKeyboardHeight';
+import { hapticFeedback } from '../../utils/haptics';
 
 // ============================================================================
 // Types
@@ -29,14 +34,8 @@ export interface MessageListProps {
   onLoadMore?: () => void;
   /** Typing indicator for a peer */
   typingPeer?: string | null;
-  /** Callback when clicking reply on a message */
-  onReplyClick?: (message: Message) => void;
   /** Callback for message context menu */
   onMessageContextMenu?: (message: Message) => void;
-  /** Function to find a message by ID (for reply previews) */
-  findMessageById?: (id: string) => Message | undefined;
-  /** Whether to show sender names (for group chats) */
-  showSenders?: boolean;
   /** Whether to show timestamps */
   showTimestamps?: boolean;
   /** Whether to show message status */
@@ -171,10 +170,7 @@ export const MessageList: FunctionComponent<MessageListProps> = ({
   hasMore = false,
   onLoadMore,
   typingPeer = null,
-  onReplyClick,
   onMessageContextMenu,
-  findMessageById,
-  showSenders = true,
   showTimestamps = true,
   showStatus = true,
 }) => {
@@ -182,6 +178,24 @@ export const MessageList: FunctionComponent<MessageListProps> = ({
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [userScrolled, setUserScrolled] = useState(false);
   const prevMessageCountRef = useRef(messages.length);
+  const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
+
+  // Keyboard avoidance
+  const keyboard = useKeyboardHeight({
+    autoScroll: true,
+    scrollTargetRef: containerRef,
+    onKeyboardChange: (state) => {
+      if (state.isVisible && isAtBottom) {
+        // Scroll to bottom when keyboard appears if we were at bottom
+        requestAnimationFrame(() => {
+          containerRef.current?.scrollTo({
+            top: containerRef.current.scrollHeight,
+            behavior: 'smooth',
+          });
+        });
+      }
+    },
+  });
 
   // Group messages by date
   const groupedMessages = useMemo(
@@ -232,51 +246,48 @@ export const MessageList: FunctionComponent<MessageListProps> = ({
     }
   }, [checkIfAtBottom, hasMore, onLoadMore, isLoadingMore]);
 
-  // Auto-scroll on new messages (only if user was at bottom)
+  // Track new messages for animation
   useEffect(() => {
     const newMessageCount = messages.length;
     const prevCount = prevMessageCountRef.current;
 
     if (newMessageCount > prevCount) {
-      // New messages arrived
+      // New messages arrived - track them for animation
+      const newIds = new Set<string>();
+      for (let i = prevCount; i < newMessageCount; i++) {
+        if (messages[i]) {
+          newIds.add(messages[i].id);
+        }
+      }
+      setNewMessageIds((prev) => new Set([...prev, ...newIds]));
+
+      // Provide haptic feedback for new messages
+      if (!messages[messages.length - 1]?.isOwn) {
+        hapticFeedback.light();
+      }
+
+      // Clear animation classes after animation completes
+      setTimeout(() => {
+        setNewMessageIds((prev) => {
+          const updated = new Set(prev);
+          newIds.forEach((id) => updated.delete(id));
+          return updated;
+        });
+      }, 500);
+
+      // Auto-scroll for new messages
       if (!userScrolled || isAtBottom) {
-        // Auto-scroll for new messages
         scrollToBottom();
       }
     }
 
     prevMessageCountRef.current = newMessageCount;
-  }, [messages.length, userScrolled, isAtBottom, scrollToBottom]);
+  }, [messages, userScrolled, isAtBottom, scrollToBottom]);
 
   // Initial scroll to bottom
   useEffect(() => {
     scrollToBottom('auto');
   }, [scrollToBottom]);
-
-  // Get reply message for a message
-  const getReplyTo = useCallback(
-    (message: Message): ReplyMessage | undefined => {
-      if (!message.mentions?.length || !findMessageById) return undefined;
-
-      // Check if this message is replying to another
-      // This is a simplified approach - in real app, would need proper reply tracking
-      const replyToId = message.mentions[0];
-      if (!replyToId) return undefined;
-
-      const replyToMessage = findMessageById(replyToId);
-
-      if (replyToMessage) {
-        return {
-          id: replyToMessage.id,
-          senderNickname: replyToMessage.senderNickname,
-          content: replyToMessage.content,
-        };
-      }
-
-      return undefined;
-    },
-    [findMessageById]
-  );
 
   // Empty state
   if (messages.length === 0) {
@@ -293,16 +304,36 @@ export const MessageList: FunctionComponent<MessageListProps> = ({
     );
   }
 
+  // Get animation class for a message
+  const getMessageAnimationClass = (message: Message): string => {
+    if (!newMessageIds.has(message.id)) {
+      return '';
+    }
+
+    // Different animations based on message type
+    if (message.type === 'system') {
+      return 'message-enter-system';
+    }
+    if (message.isOwn) {
+      return 'message-enter-sent';
+    }
+    return 'message-enter-received';
+  };
+
   return (
     <div
       ref={containerRef}
-      class="flex-1 overflow-y-auto px-3 py-2"
+      class="irc-message-list flex-1 overflow-y-auto px-3 py-2 keyboard-aware"
       onScroll={handleScroll}
+      style={{
+        paddingBottom: keyboard.isVisible ? `${keyboard.height}px` : undefined,
+        transition: keyboard.isAnimating ? 'padding-bottom 0.25s ease-out' : undefined,
+      }}
     >
       {/* Loading more indicator */}
       {isLoadingMore && (
-        <div class="flex justify-center py-4">
-          <LoadingSpinner class="w-5 h-5 text-primary" />
+        <div class="flex justify-center py-4 animate-fade-in">
+          <LoadingSpinner class="w-5 h-5 text-primary spinner-fade" />
         </div>
       )}
 
@@ -312,7 +343,7 @@ export const MessageList: FunctionComponent<MessageListProps> = ({
           <button
             type="button"
             onClick={onLoadMore}
-            class="text-terminal-xs text-muted hover:text-primary transition-colors font-mono"
+            class="text-terminal-xs text-muted hover:text-primary transition-colors font-mono btn-press"
           >
             Load earlier messages
           </button>
@@ -323,31 +354,36 @@ export const MessageList: FunctionComponent<MessageListProps> = ({
       {groupedMessages.map((group) => (
         <div key={group.date}>
           {/* Date separator */}
-          <DateSeparator date={group.date} />
+          <IRCDateSeparator date={group.date} />
 
           {/* Messages in group */}
-          {group.messages.map((message) => (
-            <MessageBubble
+          {group.messages.map((message, index) => (
+            <div
               key={message.id}
-              message={message}
-              replyTo={getReplyTo(message)}
-              showSender={showSenders && !message.isOwn}
-              showTimestamp={showTimestamps}
-              showStatus={showStatus}
-              onReplyClick={
-                onReplyClick
-                  ? () => onReplyClick(message)
-                  : undefined
-              }
-              onContextMenu={onMessageContextMenu}
-            />
+              class={getMessageAnimationClass(message)}
+              style={{
+                // Stagger effect for multiple new messages
+                animationDelay: newMessageIds.has(message.id)
+                  ? `${Math.min(index * 50, 250)}ms`
+                  : undefined,
+              }}
+            >
+              <IRCMessage
+                message={message}
+                showTimestamp={showTimestamps}
+                showStatus={showStatus}
+                onContextMenu={onMessageContextMenu}
+              />
+            </div>
           ))}
         </div>
       ))}
 
       {/* Typing indicator */}
       {typingPeer && (
-        <TypingIndicator nickname={typingPeer} />
+        <div class="animate-fade-in">
+          <IRCTypingIndicator nickname={typingPeer} />
+        </div>
       )}
     </div>
   );
@@ -388,11 +424,16 @@ export const ScrollToBottomButton: FunctionComponent<ScrollToBottomButtonProps> 
 }) => {
   if (!visible) return null;
 
+  const handleClick = () => {
+    hapticFeedback.light();
+    onClick();
+  };
+
   return (
     <button
       type="button"
-      onClick={onClick}
-      class="absolute bottom-4 right-4 w-10 h-10 flex items-center justify-center bg-surface border border-primary rounded-full shadow-terminal hover:bg-primary hover:text-background transition-all animate-terminal-fade-in"
+      onClick={handleClick}
+      class="absolute bottom-4 right-4 w-10 h-10 flex items-center justify-center bg-surface border border-primary rounded-full shadow-terminal hover:bg-primary hover:text-background transition-all animate-fade-in-up btn-press"
       aria-label={
         unreadCount > 0
           ? `Scroll to bottom (${unreadCount} new messages)`
@@ -403,7 +444,7 @@ export const ScrollToBottomButton: FunctionComponent<ScrollToBottomButtonProps> 
 
       {/* Unread count badge */}
       {unreadCount > 0 && (
-        <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-primary text-background text-terminal-xs font-bold rounded-full">
+        <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-primary text-background text-terminal-xs font-bold rounded-full animate-scale-in">
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
       )}

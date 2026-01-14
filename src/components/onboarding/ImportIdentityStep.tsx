@@ -10,7 +10,7 @@
  * - Show public key preview on valid input
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback, useMemo, useEffect } from 'preact/hooks';
 import {
   IdentityService,

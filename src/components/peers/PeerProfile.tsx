@@ -10,7 +10,7 @@
  * - Block/unblock functionality
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback, useMemo } from 'preact/hooks';
 import { usePeersStore, usePeer } from '../../stores/peers-store';
 import type { Peer } from '../../stores/types';

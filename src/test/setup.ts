@@ -6,7 +6,12 @@
  */
 
 import { vi, beforeAll, afterEach, afterAll } from 'vitest';
+import { expect } from 'vitest';
+import * as matchers from '@testing-library/jest-dom/matchers';
 import 'fake-indexeddb/auto';
+
+// Extend Vitest expect with jest-dom matchers
+expect.extend(matchers);
 
 // ============================================================================
 // Mock localStorage

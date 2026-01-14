@@ -50,6 +50,7 @@ const defaultSettings: Settings = {
   fontSize: 'medium',
   devMode: false,
   onboardingComplete: false,
+  autoRevealImages: false,
 };
 
 const initialState: SettingsState = {
@@ -232,23 +233,17 @@ export const selectNotifications = (state: SettingsStore) =>
 /**
  * Hook to get all settings
  */
-export const useSettings = (): Settings => {
-  return useSettingsStore((state) => state.settings);
-};
+export const useSettings = (): Settings => useSettingsStore((state) => state.settings);
 
 /**
  * Hook to get nickname
  */
-export const useNickname = (): string => {
-  return useSettingsStore((state) => state.settings.nickname);
-};
+export const useNickname = (): string => useSettingsStore((state) => state.settings.nickname);
 
 /**
  * Hook to get theme
  */
-export const useTheme = (): Theme => {
-  return useSettingsStore((state) => state.settings.theme);
-};
+export const useTheme = (): Theme => useSettingsStore((state) => state.settings.theme);
 
 /**
  * Hook to get effective theme (dark or light)
@@ -271,34 +266,27 @@ export const useEffectiveTheme = (): 'dark' | 'light' => {
 /**
  * Hook to get notification level
  */
-export const useNotificationLevel = (): NotificationLevel => {
-  return useSettingsStore((state) => state.settings.notifications);
-};
+export const useNotificationLevel = (): NotificationLevel => useSettingsStore((state) => state.settings.notifications);
 
 /**
  * Hook to check if notifications are enabled for a type
  */
-export const useCanNotify = (isMention: boolean = false): boolean => {
-  return useSettingsStore((state) => {
+export const useCanNotify = (isMention: boolean = false): boolean => useSettingsStore((state) => {
     const level = state.settings.notifications;
     if (level === 'none') return false;
     if (level === 'all') return true;
     return isMention; // 'mentions' level - only notify for mentions
   });
-};
 
 /**
  * Hook to check if sound is enabled
  */
-export const useSoundEnabled = (): boolean => {
-  return useSettingsStore((state) => state.settings.soundEnabled);
-};
+export const useSoundEnabled = (): boolean => useSettingsStore((state) => state.settings.soundEnabled);
 
 /**
  * Hook to get font size class
  */
-export const useFontSizeClass = (): string => {
-  return useSettingsStore((state) => {
+export const useFontSizeClass = (): string => useSettingsStore((state) => {
     switch (state.settings.fontSize) {
       case 'small':
         return 'text-sm';
@@ -308,28 +296,26 @@ export const useFontSizeClass = (): string => {
         return 'text-base';
     }
   });
-};
 
 /**
  * Hook to check if compact mode is enabled
  */
-export const useCompactMode = (): boolean => {
-  return useSettingsStore((state) => state.settings.compactMode);
-};
+export const useCompactMode = (): boolean => useSettingsStore((state) => state.settings.compactMode);
 
 /**
  * Hook to check if dev mode is enabled
  */
-export const useDevMode = (): boolean => {
-  return useSettingsStore((state) => state.settings.devMode);
-};
+export const useDevMode = (): boolean => useSettingsStore((state) => state.settings.devMode);
 
 /**
  * Hook to check if onboarding is complete
  */
-export const useOnboardingComplete = (): boolean => {
-  return useSettingsStore((state) => state.settings.onboardingComplete);
-};
+export const useOnboardingComplete = (): boolean => useSettingsStore((state) => state.settings.onboardingComplete);
+
+/**
+ * Hook to check if auto-reveal images is enabled
+ */
+export const useAutoRevealImages = (): boolean => useSettingsStore((state) => state.settings.autoRevealImages);
 
 // ============================================================================
 // Initialize system theme listener

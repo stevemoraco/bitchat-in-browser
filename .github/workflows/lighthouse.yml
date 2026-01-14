@@ -1,0 +1,401 @@
+name: Lighthouse CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Allow manual trigger
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+jobs:
+  # ============================================================================
+  # Build Job
+  # ============================================================================
+  build:
+    name: Build Production Bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  # ============================================================================
+  # Lighthouse CI Job
+  # ============================================================================
+  lighthouse:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.14.x
+
+      - name: Run Lighthouse CI
+        run: lhci autorun
+        env:
+          LHCI_BUILD_CONTEXT__CURRENT_BRANCH: ${{ github.head_ref || github.ref_name }}
+          LHCI_BUILD_CONTEXT__COMMIT_TIME: ${{ github.event.head_commit.timestamp }}
+          LHCI_BUILD_CONTEXT__CURRENT_HASH: ${{ github.sha }}
+          LHCI_BUILD_CONTEXT__COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          LHCI_BUILD_CONTEXT__AUTHOR: ${{ github.actor }}
+
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
+          retention-days: 30
+
+      - name: Post Lighthouse results to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Find the latest manifest
+            const lhciDir = '.lighthouseci';
+            const manifestPath = path.join(lhciDir, 'manifest.json');
+
+            if (!fs.existsSync(manifestPath)) {
+              console.log('No Lighthouse manifest found');
+              return;
+            }
+
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+
+            if (manifest.length === 0) {
+              console.log('Empty manifest');
+              return;
+            }
+
+            // Get the latest run
+            const latestRun = manifest[manifest.length - 1];
+            const lhrPath = path.join(lhciDir, latestRun.jsonPath.replace('.lighthouseci/', ''));
+
+            if (!fs.existsSync(lhrPath)) {
+              console.log('LHR file not found:', lhrPath);
+              return;
+            }
+
+            const lhr = JSON.parse(fs.readFileSync(lhrPath, 'utf8'));
+
+            // Extract scores
+            const scores = {
+              performance: Math.round(lhr.categories.performance.score * 100),
+              accessibility: Math.round(lhr.categories.accessibility.score * 100),
+              bestPractices: Math.round(lhr.categories['best-practices'].score * 100),
+              seo: Math.round(lhr.categories.seo.score * 100),
+              pwa: lhr.categories.pwa ? Math.round(lhr.categories.pwa.score * 100) : 'N/A'
+            };
+
+            // Create emoji based on score
+            const getEmoji = (score) => {
+              if (score === 'N/A') return '❓';
+              if (score >= 90) return '🟢';
+              if (score >= 50) return '🟡';
+              return '🔴';
+            };
+
+            // Build comment body
+            const body = `## ⚡ Lighthouse Results
+
+            | Category | Score | Status |
+            |----------|-------|--------|
+            | Performance | ${scores.performance} | ${getEmoji(scores.performance)} |
+            | Accessibility | ${scores.accessibility} | ${getEmoji(scores.accessibility)} |
+            | Best Practices | ${scores.bestPractices} | ${getEmoji(scores.bestPractices)} |
+            | SEO | ${scores.seo} | ${getEmoji(scores.seo)} |
+            | PWA | ${scores.pwa} | ${getEmoji(scores.pwa)} |
+
+            ### Performance Metrics
+
+            | Metric | Value |
+            |--------|-------|
+            | First Contentful Paint | ${lhr.audits['first-contentful-paint'].displayValue} |
+            | Largest Contentful Paint | ${lhr.audits['largest-contentful-paint'].displayValue} |
+            | Time to Interactive | ${lhr.audits['interactive'].displayValue} |
+            | Total Blocking Time | ${lhr.audits['total-blocking-time'].displayValue} |
+            | Cumulative Layout Shift | ${lhr.audits['cumulative-layout-shift'].displayValue} |
+
+            ---
+            *Lighthouse run on commit ${context.sha.substring(0, 7)}*
+            `;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existingComment = comments.find(c =>
+              c.user.login === 'github-actions[bot]' &&
+              c.body.includes('Lighthouse Results')
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+  # ============================================================================
+  # Performance Budget Check
+  # ============================================================================
+  budget-check:
+    name: Performance Budget Check
+    runs-on: ubuntu-latest
+    needs: lighthouse
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Lighthouse results
+        uses: actions/download-artifact@v4
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
+
+      - name: Check Performance Budget
+        run: |
+          MANIFEST_FILE=".lighthouseci/manifest.json"
+
+          if [ ! -f "$MANIFEST_FILE" ]; then
+            echo "No manifest file found"
+            exit 1
+          fi
+
+          # Get the latest LHR file
+          LHR_FILE=$(cat "$MANIFEST_FILE" | jq -r '.[-1].jsonPath' | sed 's|.lighthouseci/||')
+          LHR_PATH=".lighthouseci/$LHR_FILE"
+
+          if [ ! -f "$LHR_PATH" ]; then
+            echo "LHR file not found: $LHR_PATH"
+            exit 1
+          fi
+
+          echo "Analyzing Lighthouse results..."
+          echo ""
+
+          # Extract scores
+          PERF=$(cat "$LHR_PATH" | jq '.categories.performance.score * 100')
+          A11Y=$(cat "$LHR_PATH" | jq '.categories.accessibility.score * 100')
+          BP=$(cat "$LHR_PATH" | jq '.categories["best-practices"].score * 100')
+          PWA=$(cat "$LHR_PATH" | jq '.categories.pwa.score * 100 // 0')
+
+          echo "Performance Budget Check"
+          echo "========================"
+          echo ""
+          echo "Category        Score   Target  Status"
+          echo "--------        -----   ------  ------"
+
+          FAILED=0
+
+          # Performance (target: 90)
+          if [ $(echo "$PERF >= 90" | bc) -eq 1 ]; then
+            echo "Performance     $PERF   90      PASS"
+          else
+            echo "Performance     $PERF   90      FAIL"
+            FAILED=1
+          fi
+
+          # Accessibility (target: 95)
+          if [ $(echo "$A11Y >= 95" | bc) -eq 1 ]; then
+            echo "Accessibility   $A11Y   95      PASS"
+          else
+            echo "Accessibility   $A11Y   95      FAIL"
+            FAILED=1
+          fi
+
+          # Best Practices (target: 95)
+          if [ $(echo "$BP >= 95" | bc) -eq 1 ]; then
+            echo "Best Practices  $BP   95      PASS"
+          else
+            echo "Best Practices  $BP   95      FAIL"
+            FAILED=1
+          fi
+
+          # PWA (target: 95)
+          if [ $(echo "$PWA >= 95" | bc) -eq 1 ]; then
+            echo "PWA             $PWA   95      PASS"
+          else
+            echo "PWA             $PWA   95      FAIL"
+            FAILED=1
+          fi
+
+          echo ""
+
+          if [ $FAILED -eq 1 ]; then
+            echo "Performance budget check FAILED"
+            exit 1
+          else
+            echo "All performance budgets PASSED!"
+          fi
+
+  # ============================================================================
+  # Bundle Size Analysis
+  # ============================================================================
+  bundle-analysis:
+    name: Bundle Size Analysis
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Analyze bundle size
+        run: |
+          echo "Bundle Size Analysis"
+          echo "===================="
+          echo ""
+
+          # Calculate sizes
+          TOTAL_SIZE=$(du -sb dist/ | cut -f1)
+          JS_SIZE=$(find dist/ -name "*.js" -exec cat {} \; | wc -c)
+          CSS_SIZE=$(find dist/ -name "*.css" -exec cat {} \; | wc -c)
+
+          # Convert to KB
+          TOTAL_KB=$((TOTAL_SIZE / 1024))
+          JS_KB=$((JS_SIZE / 1024))
+          CSS_KB=$((CSS_SIZE / 1024))
+
+          echo "Asset Type      Size (KB)   Budget (KB)   Status"
+          echo "----------      ---------   -----------   ------"
+
+          FAILED=0
+
+          # Total bundle (target: 600KB)
+          if [ $TOTAL_KB -lt 600 ]; then
+            echo "Total           $TOTAL_KB          600          PASS"
+          else
+            echo "Total           $TOTAL_KB          600          FAIL"
+            FAILED=1
+          fi
+
+          # JavaScript (target: 500KB)
+          if [ $JS_KB -lt 500 ]; then
+            echo "JavaScript      $JS_KB          500          PASS"
+          else
+            echo "JavaScript      $JS_KB          500          FAIL"
+            FAILED=1
+          fi
+
+          # CSS (target: 50KB)
+          if [ $CSS_KB -lt 50 ]; then
+            echo "CSS             $CSS_KB           50          PASS"
+          else
+            echo "CSS             $CSS_KB           50          FAIL"
+            FAILED=1
+          fi
+
+          echo ""
+          echo "Detailed breakdown:"
+          echo ""
+          find dist/ -type f -printf "%s\t%p\n" | sort -rn | head -20 | while read size file; do
+            kb=$((size / 1024))
+            echo "  ${kb}KB - $file"
+          done
+
+          echo ""
+
+          if [ $FAILED -eq 1 ]; then
+            echo "Bundle size check FAILED"
+            exit 1
+          else
+            echo "All bundle size budgets PASSED!"
+          fi
+
+  # ============================================================================
+  # Summary Job
+  # ============================================================================
+  summary:
+    name: Performance Summary
+    runs-on: ubuntu-latest
+    needs: [lighthouse, budget-check, bundle-analysis]
+    if: always()
+    steps:
+      - name: Check job results
+        run: |
+          echo "Performance Audit Summary"
+          echo "========================="
+          echo ""
+
+          LIGHTHOUSE_STATUS="${{ needs.lighthouse.result }}"
+          BUDGET_STATUS="${{ needs.budget-check.result }}"
+          BUNDLE_STATUS="${{ needs.bundle-analysis.result }}"
+
+          echo "Lighthouse CI:      $LIGHTHOUSE_STATUS"
+          echo "Budget Check:       $BUDGET_STATUS"
+          echo "Bundle Analysis:    $BUNDLE_STATUS"
+          echo ""
+
+          if [ "$LIGHTHOUSE_STATUS" == "success" ] && \
+             [ "$BUDGET_STATUS" == "success" ] && \
+             [ "$BUNDLE_STATUS" == "success" ]; then
+            echo "All performance checks PASSED!"
+            exit 0
+          else
+            echo "Some performance checks FAILED"
+            exit 1
+          fi

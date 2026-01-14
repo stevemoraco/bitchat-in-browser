@@ -13,7 +13,7 @@
  * @module components/sharing/ShareAppModal
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useCallback, useMemo } from 'preact/hooks';
 import {
   localServerService,
@@ -88,9 +88,7 @@ const QRCodeDisplay: FunctionComponent<QRCodeDisplayProps> = ({
   // Generate a deterministic pattern from the URL
   // This is a visual placeholder - use a real QR library in production
   const pattern = useMemo(() => {
-    const hash = url.split('').reduce((acc, char) => {
-      return ((acc << 5) - acc + char.charCodeAt(0)) | 0;
-    }, 0);
+    const hash = url.split('').reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0);
 
     // Create a 21x21 grid (minimum QR code size)
     const grid: boolean[][] = [];
@@ -113,10 +111,10 @@ const QRCodeDisplay: FunctionComponent<QRCodeDisplayProps> = ({
             (i >= 2 && i <= 4 && j >= 2 && j <= 4) ||
             (i >= 2 && i <= 4 && j >= 16 && j <= 18) ||
             (i >= 16 && i <= 18 && j >= 2 && j <= 4);
-          grid[i]![j] = inOuter || inInner;
+          grid[i][j] = inOuter || inInner;
         } else {
           // Pseudo-random data pattern based on hash
-          grid[i]![j] = ((hash >> ((i + j) % 31)) & 1) === 1;
+          grid[i][j] = ((hash >> ((i + j) % 31)) & 1) === 1;
         }
       }
     }

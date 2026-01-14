@@ -6,7 +6,8 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { VNode, createElement, Fragment } from 'preact';
+import type { VNode} from 'preact';
+import { createElement, Fragment } from 'preact';
 import type {
   Token,
   TextToken,
@@ -22,8 +23,8 @@ import type {
   CodeBlockToken,
   InlineCodeToken,
   ParseResult,
-} from './parser';
-import { parseMessage, ParserOptions } from './parser';
+ ParserOptions } from './parser';
+import { parseMessage } from './parser';
 
 // ============================================================================
 // Types
@@ -181,7 +182,7 @@ function renderUrl(
 ): VNode<any> {
   const safeUrl = sanitizeUrl(token.url);
   const displayUrl =
-    token.raw.length > 50 ? token.raw.slice(0, 47) + '...' : token.raw;
+    token.raw.length > 50 ? `${token.raw.slice(0, 47)  }...` : token.raw;
 
   if (!safeUrl) {
     // Unsafe URL, render as plain text
@@ -514,33 +515,33 @@ function renderToken(
 ): VNode | string {
   switch (token.type) {
     case 'text':
-      return renderText(token as TextToken, context, classNames);
+      return renderText(token, context, classNames);
     case 'url':
-      return renderUrl(token as UrlToken, context, classNames);
+      return renderUrl(token, context, classNames);
     case 'mention':
-      return renderMention(token as MentionToken, context, classNames);
+      return renderMention(token, context, classNames);
     case 'hashtag':
-      return renderHashtag(token as HashtagToken, context, classNames);
+      return renderHashtag(token, context, classNames);
     case 'nostr_npub':
-      return renderNostrNpub(token as NostrNpubToken, context, classNames);
+      return renderNostrNpub(token, context, classNames);
     case 'nostr_note':
-      return renderNostrNote(token as NostrNoteToken, context, classNames);
+      return renderNostrNote(token, context, classNames);
     case 'nostr_nevent':
-      return renderNostrNevent(token as NostrNeventToken, context, classNames);
+      return renderNostrNevent(token, context, classNames);
     case 'nostr_nprofile':
       return renderNostrNprofile(
-        token as NostrNprofileToken,
+        token,
         context,
         classNames
       );
     case 'nostr_naddr':
-      return renderNostrNaddr(token as NostrNaddrToken, context, classNames);
+      return renderNostrNaddr(token, context, classNames);
     case 'emoji':
-      return renderEmoji(token as EmojiToken, context, classNames);
+      return renderEmoji(token, context, classNames);
     case 'code_block':
-      return renderCodeBlock(token as CodeBlockToken, context, classNames);
+      return renderCodeBlock(token, context, classNames);
     case 'inline_code':
-      return renderInlineCode(token as InlineCodeToken, context, classNames);
+      return renderInlineCode(token, context, classNames);
     case 'newline':
       return renderNewline();
     default:

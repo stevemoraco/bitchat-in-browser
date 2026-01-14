@@ -10,7 +10,7 @@
  * @module components/install/InstallPrompt
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback } from 'preact/hooks';
 import { useInstallPrompt, type Platform } from '../../hooks/useInstallPrompt';
 

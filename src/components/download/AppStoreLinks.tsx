@@ -8,7 +8,7 @@
  * - QR code generation for links
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useCallback, useMemo } from 'preact/hooks';
 import {
   regionData,

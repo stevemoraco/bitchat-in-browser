@@ -8,7 +8,7 @@
  * - All country store links
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import {
   detectCountry,
@@ -262,8 +262,7 @@ const RecommendedSection: FunctionComponent<RecommendedSectionProps> = ({
 // PWA vs Native Comparison
 // ============================================================================
 
-const ComparisonSection: FunctionComponent = () => {
-  return (
+const ComparisonSection: FunctionComponent = () => (
     <div class="comparison-section">
       <h2 class="text-xl font-bold mb-6 text-center">PWA vs Native App</h2>
 
@@ -481,7 +480,6 @@ const ComparisonSection: FunctionComponent = () => {
       </div>
     </div>
   );
-};
 
 // ============================================================================
 // Main Download Page
@@ -587,7 +585,7 @@ export const DownloadPage: FunctionComponent<DownloadPageProps> = ({
               Links are provided for {stats.iosCountries} iOS countries and{' '}
               {stats.androidCountries} Android countries.
             </p>
-            <AppStoreLinks showQRCodes={true} compact={false} />
+            <AppStoreLinks showQRCodes compact={false} />
           </div>
         )}
 

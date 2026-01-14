@@ -1,16 +1,26 @@
 /**
  * Header Component - BitChat In Browser
  *
- * Top navigation bar with:
- * - App title "BitChat In Browser"
- * - Connection status indicator (online/offline/syncing)
- * - Sync progress indicator
- * - Emergency wipe trigger (triple-tap on title)
+ * iOS-style header with:
+ * - Menu button (hamburger) - opens sidebar/menu sheet
+ * - Channel badge with dropdown - opens channel selector
+ * - Inline editable nickname display
+ * - Peer count with icon - opens peer list
+ * - Mesh status indicator (colored dot)
+ * - Settings gear - opens settings sheet
+ *
+ * Layout:
+ * [Menu] [Channel Badge] [Nickname] [Peer Count] [Status] [Settings]
  */
 
-import { FunctionComponent } from 'preact';
-import { useState, useCallback, useRef } from 'preact/hooks';
-import { useAppStore, useConnectionStatus } from '../../stores';
+import type { FunctionComponent } from 'preact';
+import { useState, useCallback, useRef, useEffect } from 'preact/hooks';
+import { useNavigationStore } from '../../stores/navigation-store';
+import { useMeshStore } from '../../stores/mesh-store';
+import { useSettingsStore, useNickname } from '../../stores/settings-store';
+import { useFingerprint } from '../../stores/identity-store';
+import { ChannelBadge } from './ChannelBadge';
+import { MeshStatusIndicator } from '../mesh/MeshStatusIndicator';
 
 // ============================================================================
 // Types
@@ -19,110 +29,234 @@ import { useAppStore, useConnectionStatus } from '../../stores';
 export type ConnectionState = 'online' | 'offline' | 'syncing';
 
 interface HeaderProps {
-  /** Current sync progress (0-100), undefined if not syncing */
-  syncProgress?: number;
-  /** Number of connected relays */
-  relayCount?: number;
+  /** Callback when menu button is clicked */
+  onMenuClick?: () => void;
   /** Callback when emergency wipe is triggered */
   onEmergencyWipe?: () => void;
 }
 
 // ============================================================================
-// Connection Status Indicator
+// Peer Count Button
 // ============================================================================
 
-interface StatusIndicatorProps {
-  state: ConnectionState;
+interface PeerCountButtonProps {
+  count: number;
+  onClick: () => void;
 }
 
-const StatusIndicator: FunctionComponent<StatusIndicatorProps> = ({ state }) => {
-  const statusConfig = {
-    online: {
-      color: 'bg-terminal-green',
-      label: 'ONLINE',
-      pulse: false,
-    },
-    offline: {
-      color: 'bg-terminal-red',
-      label: 'OFFLINE',
-      pulse: false,
-    },
-    syncing: {
-      color: 'bg-terminal-yellow',
-      label: 'SYNCING',
-      pulse: true,
-    },
+const PeerCountButton: FunctionComponent<PeerCountButtonProps> = ({
+  count,
+  onClick,
+}) => (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1 px-2 py-1.5 rounded-md hover:bg-terminal-green/10 active:bg-terminal-green/20 transition-colors"
+      aria-label={`${count} peer${count !== 1 ? 's' : ''} connected`}
+    >
+      <span className="text-terminal-green text-sm">{count}</span>
+      <span className="text-base" role="img" aria-hidden="true">
+        &#x1F464;
+      </span>
+    </button>
+  );
+
+// ============================================================================
+// Inline Editable Nickname
+// ============================================================================
+
+interface EditableNicknameProps {
+  nickname: string;
+  fallback: string;
+  onSave: (nickname: string) => void;
+}
+
+const EditableNickname: FunctionComponent<EditableNicknameProps> = ({
+  nickname,
+  fallback,
+  onSave,
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(nickname);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Update edit value when nickname changes externally
+  useEffect(() => {
+    if (!isEditing) {
+      setEditValue(nickname);
+    }
+  }, [nickname, isEditing]);
+
+  // Focus input when entering edit mode
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleClick = () => {
+    setIsEditing(true);
   };
 
-  const config = statusConfig[state];
+  const handleBlur = () => {
+    setIsEditing(false);
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== nickname) {
+      onSave(trimmed);
+    } else {
+      setEditValue(nickname);
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      (e.target as HTMLInputElement).blur();
+    } else if (e.key === 'Escape') {
+      setEditValue(nickname);
+      setIsEditing(false);
+    }
+  };
+
+  const handleChange = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    // Limit to 32 characters
+    setEditValue(target.value.slice(0, 32));
+  };
+
+  const displayName = nickname || fallback;
+
+  if (isEditing) {
+    return (
+      <input
+        ref={inputRef}
+        type="text"
+        value={editValue}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        className="bg-terminal-green/10 border border-terminal-green/30 rounded px-2 py-1 text-terminal-green text-sm font-medium max-w-[120px] focus:outline-none focus:border-terminal-green/50"
+        placeholder="Nickname"
+        maxLength={32}
+        aria-label="Edit nickname"
+      />
+    );
+  }
 
   return (
-    <div class="flex items-center gap-2">
-      <div class="relative flex items-center">
-        <div
-          class={`w-2 h-2 rounded-full ${config.color} ${
-            config.pulse ? 'animate-pulse' : ''
-          }`}
-        />
-        {config.pulse && (
-          <div
-            class={`absolute w-2 h-2 rounded-full ${config.color} animate-ping opacity-75`}
-          />
-        )}
-      </div>
-      <span class="text-terminal-xs text-terminal-green/70 hidden sm:inline">
-        [{config.label}]
-      </span>
-    </div>
+    <button
+      onClick={handleClick}
+      className="text-terminal-green text-sm font-medium truncate max-w-[120px] hover:text-terminal-green/80 transition-colors cursor-text"
+      aria-label="Click to edit nickname"
+      title={`${displayName} (click to edit)`}
+    >
+      {displayName}
+    </button>
   );
 };
 
 // ============================================================================
-// Sync Progress Bar
+// Menu Button (Hamburger)
 // ============================================================================
 
-interface SyncProgressProps {
-  progress: number;
+interface MenuButtonProps {
+  onClick: () => void;
 }
 
-const SyncProgress: FunctionComponent<SyncProgressProps> = ({ progress }) => {
-  if (progress >= 100) return null;
-
-  return (
-    <div class="flex items-center gap-2">
-      <div class="w-16 sm:w-24 h-1 bg-terminal-green/20 rounded-full overflow-hidden">
-        <div
-          class="h-full bg-terminal-green transition-all duration-300 ease-out"
-          style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+const MenuButton: FunctionComponent<MenuButtonProps> = ({ onClick }) => (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-terminal-green/10 active:bg-terminal-green/20 transition-colors"
+      aria-label="Open menu"
+    >
+      <svg
+        className="w-5 h-5 text-terminal-green"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 6h16M4 12h16M4 18h16"
         />
-      </div>
-      <span class="text-terminal-xs text-terminal-green/50 hidden sm:inline">
-        {Math.round(progress)}%
-      </span>
-    </div>
+      </svg>
+    </button>
   );
-};
+
+// ============================================================================
+// Settings Button (Gear)
+// ============================================================================
+
+interface SettingsButtonProps {
+  onClick: () => void;
+}
+
+const SettingsButton: FunctionComponent<SettingsButtonProps> = ({ onClick }) => (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-terminal-green/10 active:bg-terminal-green/20 transition-colors"
+      aria-label="Open settings"
+    >
+      <svg
+        className="w-5 h-5 text-terminal-green"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+        />
+      </svg>
+    </button>
+  );
 
 // ============================================================================
 // Header Component
 // ============================================================================
 
 export const Header: FunctionComponent<HeaderProps> = ({
-  syncProgress,
-  relayCount = 0,
+  onMenuClick,
   onEmergencyWipe,
 }) => {
-  const { isOnline } = useConnectionStatus();
-  const error = useAppStore((state) => state.error);
+  // Navigation store
+  const openSettings = useNavigationStore((state) => state.openSettings);
+  const openPeers = useNavigationStore((state) => state.openPeers);
 
-  // Triple-tap detection for emergency wipe
+  // Mesh store
+  const meshPeerCount = useMeshStore((state) => state.peers.length);
+
+  // Settings store
+  const nickname = useNickname();
+  const setNickname = useSettingsStore((state) => state.setNickname);
+
+  // Identity store for fallback display name
+  const fingerprint = useFingerprint();
+  const fallbackName = fingerprint
+    ? `anon-${fingerprint.slice(0, 6)}`
+    : 'Anonymous';
+
+  // Triple-tap detection for emergency wipe (on the nickname)
   const [tapCount, setTapCount] = useState(0);
   const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const TRIPLE_TAP_THRESHOLD = 500; // ms between taps
+  const TRIPLE_TAP_THRESHOLD = 500;
   const REQUIRED_TAPS = 3;
 
   const handleTitleTap = useCallback(() => {
-    // Clear previous timeout
+    if (!onEmergencyWipe) return;
+
     if (tapTimeoutRef.current) {
       clearTimeout(tapTimeoutRef.current);
     }
@@ -130,85 +264,79 @@ export const Header: FunctionComponent<HeaderProps> = ({
     const newTapCount = tapCount + 1;
 
     if (newTapCount >= REQUIRED_TAPS) {
-      // Triple tap detected - trigger emergency wipe
       setTapCount(0);
-      if (onEmergencyWipe) {
-        // Confirm before wiping
-        const confirmed = confirm(
-          'EMERGENCY WIPE: This will delete ALL local data including your keys. Are you absolutely sure?'
-        );
-        if (confirmed) {
-          onEmergencyWipe();
-        }
+      const confirmed = confirm(
+        'EMERGENCY WIPE: This will delete ALL local data including your keys. Are you absolutely sure?'
+      );
+      if (confirmed) {
+        onEmergencyWipe();
       }
     } else {
       setTapCount(newTapCount);
-      // Reset tap count after threshold
       tapTimeoutRef.current = setTimeout(() => {
         setTapCount(0);
       }, TRIPLE_TAP_THRESHOLD);
     }
   }, [tapCount, onEmergencyWipe]);
 
-  // Determine connection state
-  const connectionState: ConnectionState =
-    syncProgress !== undefined && syncProgress < 100
-      ? 'syncing'
-      : isOnline
-        ? 'online'
-        : 'offline';
+  // Handlers
+  const handleMenuClick = () => {
+    if (onMenuClick) {
+      onMenuClick();
+    }
+  };
+
+  const handlePeerClick = () => {
+    openPeers();
+  };
+
+  const handleSettingsClick = () => {
+    openSettings();
+  };
+
+  const handleNicknameSave = (newNickname: string) => {
+    setNickname(newNickname);
+  };
 
   return (
-    <header class="sticky top-0 z-50 bg-terminal-bg border-b border-terminal-green/30 safe-top">
-      <div class="flex items-center justify-between px-4 py-3">
-        {/* Left: App title with emergency wipe trigger */}
-        <div class="flex items-center gap-3">
-          <button
-            onClick={handleTitleTap}
-            class="text-terminal-green font-bold text-lg select-none focus:outline-none active:opacity-80"
-            aria-label="BitChat In Browser"
-          >
-            <span class="hidden sm:inline">BitChat In Browser</span>
-            <span class="sm:hidden">BitChat</span>
-          </button>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-terminal-bg border-b border-terminal-green/30 safe-top">
+      <div className="flex items-center justify-between px-2 py-2 gap-2">
+        {/* Left section: Menu + Channel Badge */}
+        <div className="flex items-center gap-1 min-w-0 flex-shrink-0">
+          <MenuButton onClick={handleMenuClick} />
+          <ChannelBadge />
+        </div>
 
+        {/* Center section: Nickname (with emergency wipe trigger) */}
+        <div
+          className="flex items-center justify-center flex-1 min-w-0 cursor-pointer"
+          onClick={handleTitleTap}
+        >
+          <EditableNickname
+            nickname={nickname}
+            fallback={fallbackName}
+            onSave={handleNicknameSave}
+          />
           {/* Visual feedback for tap count (subtle) */}
           {tapCount > 0 && tapCount < REQUIRED_TAPS && (
-            <div class="flex gap-0.5">
+            <div className="flex gap-0.5 ml-1">
               {Array.from({ length: tapCount }).map((_, i) => (
-                <div key={i} class="w-1.5 h-1.5 rounded-full bg-terminal-red" />
+                <div
+                  key={i}
+                  className="w-1.5 h-1.5 rounded-full bg-terminal-red"
+                />
               ))}
             </div>
           )}
         </div>
 
-        {/* Right: Status indicators */}
-        <div class="flex items-center gap-4">
-          {/* Sync progress */}
-          {syncProgress !== undefined && syncProgress < 100 && (
-            <SyncProgress progress={syncProgress} />
-          )}
-
-          {/* Relay count (when online) */}
-          {isOnline && relayCount > 0 && (
-            <span class="text-terminal-xs text-terminal-green/50 hidden md:inline">
-              {relayCount} relay{relayCount !== 1 ? 's' : ''}
-            </span>
-          )}
-
-          {/* Connection status */}
-          <StatusIndicator state={connectionState} />
+        {/* Right section: Peer Count + Status + Settings */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <PeerCountButton count={meshPeerCount} onClick={handlePeerClick} />
+          <MeshStatusIndicator showLabel={false} />
+          <SettingsButton onClick={handleSettingsClick} />
         </div>
       </div>
-
-      {/* Error banner */}
-      {error && (
-        <div class="px-4 py-2 bg-terminal-red/10 border-t border-terminal-red/30">
-          <p class="text-terminal-xs text-terminal-red truncate">
-            [ERROR] {error}
-          </p>
-        </div>
-      )}
     </header>
   );
 };

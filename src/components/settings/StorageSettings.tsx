@@ -10,7 +10,7 @@
  * @module components/settings/StorageSettings
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useCallback } from 'preact/hooks';
 import { getStorageManager, type StorageHealth } from '../../services/storage';
 

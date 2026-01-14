@@ -10,9 +10,9 @@ import { useState, useCallback, useEffect, useRef } from 'preact/hooks';
 import {
   BitChatError,
   ErrorCategory,
-  ErrorSeverity,
   getUserMessage,
   isBitChatError,
+  type ErrorSeverity,
 } from '../services/errors';
 import {
   handleError as globalHandleError,
@@ -184,13 +184,11 @@ export function useError(options: UseErrorOptions = {}): UseErrorReturn {
   const clearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear timeout on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       if (clearTimeoutRef.current) {
         clearTimeout(clearTimeoutRef.current);
       }
-    };
-  }, []);
+    }, []);
 
   // Auto-clear when autoClearMs is set
   useEffect(() => {
@@ -376,23 +374,17 @@ export function useToasts(maxToasts: number = 5): UseToastsReturn {
   );
 
   const showSuccess = useCallback(
-    (message: string, options: Partial<ToastProps> = {}): string => {
-      return showToast(message, 'success', options);
-    },
+    (message: string, options: Partial<ToastProps> = {}): string => showToast(message, 'success', options),
     [showToast]
   );
 
   const showWarning = useCallback(
-    (message: string, options: Partial<ToastProps> = {}): string => {
-      return showToast(message, 'warning', { duration: 6000, ...options });
-    },
+    (message: string, options: Partial<ToastProps> = {}): string => showToast(message, 'warning', { duration: 6000, ...options }),
     [showToast]
   );
 
   const showInfo = useCallback(
-    (message: string, options: Partial<ToastProps> = {}): string => {
-      return showToast(message, 'info', options);
-    },
+    (message: string, options: Partial<ToastProps> = {}): string => showToast(message, 'info', options),
     [showToast]
   );
 
@@ -584,9 +576,7 @@ export function useGlobalErrors(options: { onError?: (error: BitChatError) => vo
     setRecentErrors([]);
   }, [handler]);
 
-  const exportLog = useCallback(() => {
-    return handler.exportLog();
-  }, [handler]);
+  const exportLog = useCallback(() => handler.exportLog(), [handler]);
 
   return {
     recentErrors,

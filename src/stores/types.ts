@@ -8,7 +8,7 @@
 
 export type MessageStatus = 'pending' | 'sent' | 'delivered' | 'failed';
 
-export type MessageType = 'text' | 'system' | 'action';
+export type MessageType = 'text' | 'system' | 'action' | 'voice' | 'image';
 
 export interface Message {
   /** Unique message identifier (Nostr event ID or local UUID) */
@@ -35,6 +35,22 @@ export interface Message {
   isRead: boolean;
   /** Mentioned user fingerprints */
   mentions?: string[];
+  /** Voice note ID (for voice messages stored in IndexedDB) */
+  voiceNoteId?: string;
+  /** Voice message duration in seconds */
+  voiceDuration?: number;
+  /** Voice message waveform data for visualization */
+  voiceWaveform?: number[];
+  /** Image message ID (for images stored in IndexedDB) */
+  imageId?: string;
+  /** Image thumbnail (base64 blurred preview) */
+  imageThumbnail?: string;
+  /** Image width in pixels */
+  imageWidth?: number;
+  /** Image height in pixels */
+  imageHeight?: number;
+  /** Image MIME type */
+  imageMimeType?: string;
 }
 
 // ============================================================================
@@ -136,6 +152,8 @@ export interface Settings {
   devMode: boolean;
   /** Whether onboarding has been completed */
   onboardingComplete: boolean;
+  /** Whether to auto-reveal images without tapping */
+  autoRevealImages: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -151,6 +169,7 @@ export const DEFAULT_SETTINGS: Settings = {
   fontSize: 'medium',
   devMode: false,
   onboardingComplete: false,
+  autoRevealImages: false,
 };
 
 // ============================================================================

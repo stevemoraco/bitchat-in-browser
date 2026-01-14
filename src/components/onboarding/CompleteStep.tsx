@@ -7,7 +7,7 @@
  * - "Start Chatting" button
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useIdentity, useFingerprint } from '../../stores/identity-store';
 
 // ============================================================================

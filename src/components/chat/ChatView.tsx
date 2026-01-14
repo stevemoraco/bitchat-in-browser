@@ -13,7 +13,7 @@
  * - Desktop: Three-column layout integration
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback, useRef, useMemo } from 'preact/hooks';
 import type { Message, Channel, Peer } from '../../stores/types';
 import { useChannelMessages, useMessagesStore } from '../../stores/messages-store';
@@ -26,6 +26,8 @@ import { MessageInput } from './MessageInput';
 import type { ReplyMessage } from './MessageBubble';
 import { useIsMobile, useChatLayout } from '../../hooks/useMediaQuery';
 import { useSwipeBack } from '../../hooks/useTouchGestures';
+import { useCommandHandler } from './useCommandHandler';
+import { useSettingsStore } from '../../stores/settings-store';
 
 // ============================================================================
 // Types
@@ -91,6 +93,15 @@ export const ChatView: FunctionComponent<ChatViewProps> = ({
   const typingPeer: string | null = null;
   const messageListRef = useRef<HTMLDivElement>(null);
 
+  // Get nickname from settings
+  const nickname = useSettingsStore((state) => state.settings.nickname);
+
+  // Command handler
+  const { handleCommand } = useCommandHandler({
+    channelId,
+    onLeaveChannel: onBack,
+  });
+
   // Convert Message to ReplyMessage for MessageInput
   const replyMessage: ReplyMessage | null = replyTo
     ? {
@@ -100,23 +111,8 @@ export const ChatView: FunctionComponent<ChatViewProps> = ({
       }
     : null;
 
-  // Find message by ID (for reply previews)
-  const findMessageById = useCallback(
-    (id: string): Message | undefined => {
-      return messages.find((m) => m.id === id);
-    },
-    [messages]
-  );
-
   // Count unread messages
-  const unreadCount = useMemo(() => {
-    return messages.filter((m) => !m.isRead && !m.isOwn).length;
-  }, [messages]);
-
-  // Handle reply click
-  const handleReplyClick = useCallback((message: Message) => {
-    setReplyTo(message);
-  }, []);
+  const unreadCount = useMemo(() => messages.filter((m) => !m.isRead && !m.isOwn).length, [messages]);
 
   // Handle cancel reply
   const handleCancelReply = useCallback(() => {
@@ -125,7 +121,7 @@ export const ChatView: FunctionComponent<ChatViewProps> = ({
 
   // Handle send message
   const handleSendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, mentions?: string[]) => {
       if (!channel) return;
 
       setIsSending(true);
@@ -141,14 +137,14 @@ export const ChatView: FunctionComponent<ChatViewProps> = ({
             id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
             channelId,
             senderFingerprint: 'local', // Would be actual fingerprint
-            senderNickname: 'You', // Would be from identity store
+            senderNickname: nickname || 'You', // Use nickname from settings
             content,
             timestamp: Date.now(),
             type: 'text',
             status: 'pending',
             isOwn: true,
             isRead: true,
-            mentions: replyTo ? [replyTo.id] : undefined,
+            mentions: mentions || (replyTo ? [replyTo.senderFingerprint] : undefined),
           };
           addMessage(newMessage);
 
@@ -171,7 +167,49 @@ export const ChatView: FunctionComponent<ChatViewProps> = ({
         setIsSending(false);
       }
     },
-    [channel, channelId, replyTo, onSendMessage]
+    [channel, channelId, replyTo, onSendMessage, nickname]
+  );
+
+  // Handle command execution
+  const handleCommandExecution = useCallback(
+    (command: string, args: string) => {
+      const result = handleCommand(command, args);
+
+      // If command produces an action message, send it
+      if (result.success && result.actionMessage) {
+        const addMessage = useMessagesStore.getState().addMessage;
+        const actionMessage: Message = {
+          id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          channelId,
+          senderFingerprint: 'local',
+          senderNickname: nickname || 'You',
+          content: result.actionMessage.content,
+          timestamp: Date.now(),
+          type: 'action',
+          status: 'pending',
+          isOwn: true,
+          isRead: true,
+        };
+        addMessage(actionMessage);
+
+        // Update channel's last message timestamp
+        const updateChannel = useChannelsStore.getState().updateChannel;
+        updateChannel(channelId, { lastMessageAt: Date.now() });
+
+        // Simulate sending
+        setTimeout(() => {
+          const updateStatus = useMessagesStore.getState().updateMessageStatus;
+          updateStatus(channelId, actionMessage.id, 'sent');
+        }, 500);
+      }
+
+      // Show error message if command failed
+      if (!result.success && result.message) {
+        console.warn('Command failed:', result.message);
+        // Optionally show a toast or system message
+      }
+    },
+    [channelId, handleCommand, nickname]
   );
 
   // Handle scroll to bottom
@@ -256,12 +294,9 @@ export const ChatView: FunctionComponent<ChatViewProps> = ({
           hasMore={hasMoreMessages}
           onLoadMore={onLoadMore}
           typingPeer={typingPeer}
-          onReplyClick={handleReplyClick}
           onMessageContextMenu={handleMessageContextMenu}
-          findMessageById={findMessageById}
-          showSenders={channel.type !== 'dm'}
-          showTimestamps={true}
-          showStatus={true}
+          showTimestamps
+          showStatus
         />
 
         {/* Scroll to bottom button */}
@@ -276,6 +311,7 @@ export const ChatView: FunctionComponent<ChatViewProps> = ({
       <div class={isMobile ? 'message-input-container' : 'message-input-desktop'}>
         <MessageInput
           onSend={handleSendMessage}
+          onCommand={handleCommandExecution}
           isOffline={!isOnline}
           replyTo={replyMessage}
           onCancelReply={handleCancelReply}
@@ -356,20 +392,7 @@ export const StandaloneChatView: FunctionComponent<StandaloneChatViewProps> = ({
       }
     : null;
 
-  const findMessageById = useCallback(
-    (id: string): Message | undefined => {
-      return messages.find((m) => m.id === id);
-    },
-    [messages]
-  );
-
-  const unreadCount = useMemo(() => {
-    return messages.filter((m) => !m.isRead && !m.isOwn).length;
-  }, [messages]);
-
-  const handleReplyClick = useCallback((message: Message) => {
-    setReplyTo(message);
-  }, []);
+  const unreadCount = useMemo(() => messages.filter((m) => !m.isRead && !m.isOwn).length, [messages]);
 
   const handleCancelReply = useCallback(() => {
     setReplyTo(null);
@@ -421,12 +444,9 @@ export const StandaloneChatView: FunctionComponent<StandaloneChatViewProps> = ({
           hasMore={hasMoreMessages}
           onLoadMore={onLoadMore}
           typingPeer={typingPeer}
-          onReplyClick={handleReplyClick}
           onMessageContextMenu={handleMessageContextMenu}
-          findMessageById={findMessageById}
-          showSenders={channel.type !== 'dm'}
-          showTimestamps={true}
-          showStatus={true}
+          showTimestamps
+          showStatus
         />
 
         <ScrollToBottomButton

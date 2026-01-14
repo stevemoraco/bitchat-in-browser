@@ -1,0 +1,434 @@
+# Security Audit Workflow
+#
+# Automated security scanning and vulnerability detection for BitChat In Browser.
+# Runs on push, pull request, and scheduled intervals.
+#
+# Features:
+# - npm audit for dependency vulnerabilities
+# - Custom security scanning for code patterns
+# - SAST (Static Application Security Testing)
+# - Secret detection
+# - License compliance checking
+# - Coverage gate enforcement
+
+name: Security Audit
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  schedule:
+    # Run weekly on Mondays at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      full_scan:
+        description: 'Run full security scan'
+        required: false
+        default: 'false'
+
+env:
+  NODE_VERSION: '18.x'
+  # Coverage threshold - block deploys below this
+  COVERAGE_THRESHOLD: '80'
+
+jobs:
+  # ============================================================================
+  # Dependency Audit
+  # ============================================================================
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        id: npm-audit
+        run: |
+          echo "## NPM Audit Results" >> $GITHUB_STEP_SUMMARY
+          npm audit --json > audit-results.json || true
+
+          # Parse and summarize results
+          HIGH_COUNT=$(cat audit-results.json | jq '.metadata.vulnerabilities.high // 0')
+          CRITICAL_COUNT=$(cat audit-results.json | jq '.metadata.vulnerabilities.critical // 0')
+
+          echo "High vulnerabilities: $HIGH_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "Critical vulnerabilities: $CRITICAL_COUNT" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$CRITICAL_COUNT" -gt 0 ]; then
+            echo "::error::Found $CRITICAL_COUNT critical vulnerabilities"
+            exit 1
+          fi
+
+          if [ "$HIGH_COUNT" -gt 5 ]; then
+            echo "::warning::Found $HIGH_COUNT high severity vulnerabilities"
+          fi
+
+      - name: Upload audit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-results
+          path: audit-results.json
+
+      - name: Check for known vulnerabilities in specific packages
+        run: |
+          # Check for specific concerning packages
+          DANGEROUS_PACKAGES=(
+            "event-stream"
+            "flatmap-stream"
+            "ua-parser-js@<0.7.32"
+          )
+
+          echo "Checking for known dangerous packages..."
+          for pkg in "${DANGEROUS_PACKAGES[@]}"; do
+            if grep -q "$pkg" package-lock.json 2>/dev/null; then
+              echo "::error::Found potentially dangerous package: $pkg"
+              exit 1
+            fi
+          done
+          echo "No known dangerous packages found."
+
+  # ============================================================================
+  # Code Security Scan
+  # ============================================================================
+  code-security-scan:
+    name: Code Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run custom security scan
+        run: |
+          echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+
+          # Run the project's security scan script if it exists
+          if [ -f "scripts/security-scan.ts" ]; then
+            npx tsx scripts/security-scan.ts || true
+          fi
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Scanning for hardcoded secrets..."
+
+          # Patterns to detect
+          PATTERNS=(
+            'password\s*=\s*["\x27][^"\x27]{8,}'
+            'api[_-]?key\s*=\s*["\x27][^"\x27]{16,}'
+            'secret\s*=\s*["\x27][^"\x27]{8,}'
+            'private[_-]?key\s*=\s*["\x27][^"\x27]{32,}'
+            'nsec1[a-zA-Z0-9]{58}'
+            'npub1[a-zA-Z0-9]{58}'
+          )
+
+          FOUND_SECRETS=0
+          for pattern in "${PATTERNS[@]}"; do
+            if grep -rEi "$pattern" src/ --include="*.ts" --include="*.tsx" --include="*.js" 2>/dev/null | grep -v "test" | grep -v ".spec." | grep -v "__tests__"; then
+              FOUND_SECRETS=$((FOUND_SECRETS + 1))
+            fi
+          done
+
+          if [ $FOUND_SECRETS -gt 0 ]; then
+            echo "::warning::Found potential hardcoded secrets. Please review."
+          else
+            echo "No hardcoded secrets detected."
+          fi
+
+      - name: Check for unsafe patterns
+        run: |
+          echo "Scanning for unsafe code patterns..."
+
+          # Check for eval usage
+          if grep -rE '\beval\s*\(' src/ --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "test" | grep -v ".spec."; then
+            echo "::warning::Found eval() usage - potential security risk"
+          fi
+
+          # Check for innerHTML without sanitization
+          if grep -rE '\.innerHTML\s*=' src/ --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "test" | grep -v ".spec."; then
+            echo "::warning::Found innerHTML assignment - potential XSS risk"
+          fi
+
+          # Check for dangerouslySetInnerHTML
+          if grep -rE 'dangerouslySetInnerHTML' src/ --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "test" | grep -v ".spec."; then
+            echo "::warning::Found dangerouslySetInnerHTML - review for XSS safety"
+          fi
+
+          # Check for document.write
+          if grep -rE 'document\.write' src/ --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "test" | grep -v ".spec."; then
+            echo "::warning::Found document.write() - potential security risk"
+          fi
+
+          echo "Pattern scan complete."
+
+      - name: Check crypto implementation
+        run: |
+          echo "Validating cryptographic implementations..."
+
+          # Ensure we're using libsodium, not crypto-js or other weak libraries
+          if grep -rE 'crypto-js|CryptoJS' src/ package.json 2>/dev/null; then
+            echo "::warning::Found crypto-js usage - consider using libsodium instead"
+          fi
+
+          # Check for proper random number generation
+          if grep -rE 'Math\.random' src/ --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "test" | grep -v ".spec." | grep -iE 'key|secret|token|nonce|salt|iv'; then
+            echo "::error::Found Math.random() used for cryptographic purposes - use crypto.getRandomValues()"
+            exit 1
+          fi
+
+          echo "Crypto implementation check complete."
+
+  # ============================================================================
+  # Static Analysis
+  # ============================================================================
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript type check
+        run: npm run typecheck
+
+      - name: Run ESLint
+        run: |
+          npm run lint -- --format json --output-file eslint-results.json || true
+
+          # Count errors
+          ERROR_COUNT=$(cat eslint-results.json | jq '[.[] | .errorCount] | add // 0')
+          WARNING_COUNT=$(cat eslint-results.json | jq '[.[] | .warningCount] | add // 0')
+
+          echo "## ESLint Results" >> $GITHUB_STEP_SUMMARY
+          echo "Errors: $ERROR_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "Warnings: $WARNING_COUNT" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "::error::ESLint found $ERROR_COUNT errors"
+            npm run lint
+            exit 1
+          fi
+
+      - name: Upload ESLint results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-results
+          path: eslint-results.json
+
+  # ============================================================================
+  # Coverage Gate
+  # ============================================================================
+  coverage-gate:
+    name: Coverage Gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Run coverage gate
+        run: |
+          npx tsx scripts/coverage-gate.ts \
+            --threshold ${{ env.COVERAGE_THRESHOLD }} \
+            --ci \
+            --track \
+            --badge \
+            --verbose
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage/
+            .coverage-history.json
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            try {
+              const coverageSummary = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+              const total = coverageSummary.total;
+
+              const body = `## Coverage Report
+
+              | Metric | Coverage |
+              |--------|----------|
+              | Lines | ${total.lines.pct.toFixed(2)}% |
+              | Statements | ${total.statements.pct.toFixed(2)}% |
+              | Functions | ${total.functions.pct.toFixed(2)}% |
+              | Branches | ${total.branches.pct.toFixed(2)}% |
+
+              Threshold: ${process.env.COVERAGE_THRESHOLD}%
+              `;
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            } catch (e) {
+              console.log('Could not post coverage comment:', e.message);
+            }
+
+  # ============================================================================
+  # License Compliance
+  # ============================================================================
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check licenses
+        run: |
+          npx license-checker --production --json > licenses.json || true
+
+          echo "## License Check" >> $GITHUB_STEP_SUMMARY
+
+          # Disallowed licenses for production
+          DISALLOWED_LICENSES="GPL|AGPL|SSPL|CPAL|OSL|EUPL"
+
+          # Check for disallowed licenses
+          if grep -E "$DISALLOWED_LICENSES" licenses.json; then
+            echo "::warning::Found packages with potentially problematic licenses. Please review."
+            echo "Found packages with restrictive licenses - review required" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "All licenses are permissive" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: licenses.json
+
+  # ============================================================================
+  # Security Summary
+  # ============================================================================
+  security-summary:
+    name: Security Summary
+    needs: [dependency-audit, code-security-scan, static-analysis, coverage-gate, license-check]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Generate security summary
+        run: |
+          echo "## Security Audit Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Check job statuses
+          DEP_STATUS="${{ needs.dependency-audit.result }}"
+          CODE_STATUS="${{ needs.code-security-scan.result }}"
+          STATIC_STATUS="${{ needs.static-analysis.result }}"
+          COV_STATUS="${{ needs.coverage-gate.result }}"
+          LICENSE_STATUS="${{ needs.license-check.result }}"
+
+          format_status() {
+            case "$1" in
+              success) echo ":white_check_mark: Passed" ;;
+              failure) echo ":x: Failed" ;;
+              cancelled) echo ":warning: Cancelled" ;;
+              skipped) echo ":fast_forward: Skipped" ;;
+              *) echo ":question: Unknown" ;;
+            esac
+          }
+
+          echo "| Dependency Audit | $(format_status $DEP_STATUS) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Security Scan | $(format_status $CODE_STATUS) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Static Analysis | $(format_status $STATIC_STATUS) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Coverage Gate | $(format_status $COV_STATUS) |" >> $GITHUB_STEP_SUMMARY
+          echo "| License Check | $(format_status $LICENSE_STATUS) |" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "Generated by Security Audit workflow on $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.dependency-audit.result }}" == "failure" ]] || \
+             [[ "${{ needs.code-security-scan.result }}" == "failure" ]] || \
+             [[ "${{ needs.static-analysis.result }}" == "failure" ]] || \
+             [[ "${{ needs.coverage-gate.result }}" == "failure" ]]; then
+            echo "::error::Security audit failed - see individual job results"
+            exit 1
+          fi
+
+          echo "Security audit completed successfully"

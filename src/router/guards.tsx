@@ -9,7 +9,7 @@
  * before rendering children or redirecting.
  */
 
-import { FunctionComponent, ComponentChildren } from 'preact';
+import type { FunctionComponent, ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { useHasIdentity, useSettingsStore } from '../stores';
 

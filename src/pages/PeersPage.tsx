@@ -8,7 +8,7 @@
  * - Verify peer view
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback } from 'preact/hooks';
 import type { Peer } from '../stores/types';
 
@@ -217,8 +217,7 @@ export const PeersPage: FunctionComponent<PeersPageProps> = ({
 export const StandalonePeersPage: FunctionComponent<{
   onNavigateHome?: () => void;
   onMessagePeer?: (peer: Peer) => void;
-}> = ({ onNavigateHome, onMessagePeer }) => {
-  return (
+}> = ({ onNavigateHome, onMessagePeer }) => (
     <div class="flex flex-col h-screen bg-background">
       {/* App header */}
       <header class="px-4 py-3 border-b border-muted flex items-center gap-3 bg-surface">
@@ -240,7 +239,6 @@ export const StandalonePeersPage: FunctionComponent<{
       </main>
     </div>
   );
-};
 
 // ============================================================================
 // Exports

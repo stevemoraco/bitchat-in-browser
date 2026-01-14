@@ -602,16 +602,12 @@ export const ariaLabels = {
   /**
    * Generate label for a close button
    */
-  closeButton: (context?: string): string => {
-    return context ? `Close ${context}` : 'Close';
-  },
+  closeButton: (context?: string): string => context ? `Close ${context}` : 'Close',
 
   /**
    * Generate label for a toggle button
    */
-  toggleButton: (name: string, isExpanded: boolean): string => {
-    return `${name}, ${isExpanded ? 'expanded' : 'collapsed'}`;
-  },
+  toggleButton: (name: string, isExpanded: boolean): string => `${name}, ${isExpanded ? 'expanded' : 'collapsed'}`,
 
   /**
    * Generate label for a navigation item with badge
@@ -624,9 +620,7 @@ export const ariaLabels = {
   /**
    * Generate label for a loading state
    */
-  loading: (action: string): string => {
-    return `${action}, please wait`;
-  },
+  loading: (action: string): string => `${action}, please wait`,
 
   /**
    * Generate label for a message
@@ -639,9 +633,7 @@ export const ariaLabels = {
   /**
    * Generate label for a peer status
    */
-  peerStatus: (name: string, status: 'online' | 'offline' | 'away'): string => {
-    return `${name}, ${status}`;
-  },
+  peerStatus: (name: string, status: 'online' | 'offline' | 'away'): string => `${name}, ${status}`,
 
   /**
    * Generate label for connection status

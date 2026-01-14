@@ -5,7 +5,8 @@
  * Uses Workbox for cache management with the following strategies:
  * - App shell (HTML, JS, CSS): CacheFirst
  * - API/relay calls: NetworkFirst with 5s timeout
- * - Images/fonts: StaleWhileRevalidate
+ * - Images: StaleWhileRevalidate
+ * - Fonts: CacheFirst (fonts never change)
  *
  * Also handles:
  * - Push notifications with channel-specific routing
@@ -19,12 +20,98 @@
 /// <reference lib="webworker" />
 
 import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching';
-import { registerRoute, NavigationRoute, Route } from 'workbox-routing';
+import { registerRoute, NavigationRoute, Route, setCatchHandler } from 'workbox-routing';
 import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
 declare let self: ServiceWorkerGlobalScope;
+
+// ============================================================================
+// IndexedDB Configuration for P2P Received Bundles
+// ============================================================================
+
+const BUNDLE_DB_NAME = 'bitchat-app-bundle';
+const BUNDLE_DB_VERSION = 1;
+const ASSETS_STORE = 'assets';
+
+interface StoredAsset {
+  path: string;
+  content: Uint8Array;
+  mimeType: string;
+  size: number;
+}
+
+/**
+ * Open the bundle IndexedDB
+ */
+async function openBundleDB(): Promise<IDBDatabase | null> {
+  return new Promise((resolve) => {
+    try {
+      const request = indexedDB.open(BUNDLE_DB_NAME, BUNDLE_DB_VERSION);
+
+      request.onerror = () => {
+        console.warn('[SW] Could not open bundle DB');
+        resolve(null);
+      };
+
+      request.onsuccess = () => resolve(request.result);
+
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains(ASSETS_STORE)) {
+          db.createObjectStore(ASSETS_STORE, { keyPath: 'path' });
+        }
+      };
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+/**
+ * Get asset from IndexedDB
+ */
+async function getAssetFromDB(path: string): Promise<StoredAsset | null> {
+  const db = await openBundleDB();
+  if (!db) return null;
+
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(ASSETS_STORE, 'readonly');
+      const store = tx.objectStore(ASSETS_STORE);
+      const request = store.get(path);
+
+      request.onsuccess = () => {
+        resolve(request.result || null);
+      };
+
+      request.onerror = () => {
+        resolve(null);
+      };
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+/**
+ * Create Response from stored asset
+ */
+function assetToResponse(asset: StoredAsset): Response {
+  // Create a new ArrayBuffer copy to ensure it's a proper ArrayBuffer (not SharedArrayBuffer)
+  const buffer = new ArrayBuffer(asset.content.byteLength);
+  new Uint8Array(buffer).set(asset.content);
+  return new Response(buffer, {
+    status: 200,
+    statusText: 'OK',
+    headers: {
+      'Content-Type': asset.mimeType,
+      'Content-Length': asset.size.toString(),
+      'X-Served-From': 'indexeddb-bundle',
+    },
+  });
+}
 
 // ============================================================================
 // Version Information
@@ -172,9 +259,31 @@ async function notifyClientsOfUpdate(): Promise<void> {
 /**
  * Navigation Route
  * Serve the app shell for all navigation requests
+ * Checks IndexedDB first for P2P received bundles, then falls back to Workbox cache
  */
-const navigationHandler = createHandlerBoundToURL('/index.html');
-const navigationRoute = new NavigationRoute(navigationHandler, {
+async function handleNavigation(options: {
+  event: ExtendableEvent;
+  request: Request;
+  url: URL;
+  params?: string[] | Record<string, unknown>;
+}): Promise<Response> {
+  const { request, url } = options;
+
+  // Try IndexedDB first (P2P received bundle)
+  const indexPath = url.pathname === '/' ? '/index.html' : url.pathname;
+  const dbAsset = await getAssetFromDB(indexPath);
+  if (dbAsset) {
+    console.log('[SW] Serving navigation from IndexedDB:', indexPath);
+    return assetToResponse(dbAsset);
+  }
+
+  // Fall back to the default Workbox handler
+  const defaultHandler = createHandlerBoundToURL('/index.html');
+  return defaultHandler(options);
+}
+
+// Replace the simple NavigationRoute with our custom one
+const navigationRoute = new NavigationRoute(handleNavigation, {
   denylist: [
     // Exclude certain paths from app shell
     /^\/api\//,
@@ -184,8 +293,8 @@ const navigationRoute = new NavigationRoute(navigationHandler, {
 registerRoute(navigationRoute);
 
 /**
- * App Shell (CSS, JS) - CacheFirst
- * Static assets are versioned, so cache first is safe
+ * App Shell (CSS, JS) - Check IndexedDB first, then CacheFirst
+ * Checks IndexedDB for P2P received bundles before falling back to Workbox cache
  */
 const appShellRoute = new Route(
   ({ request, url }) => {
@@ -198,19 +307,36 @@ const appShellRoute = new Route(
       url.pathname.endsWith('.css')
     );
   },
-  new CacheFirst({
-    cacheName: STATIC_CACHE,
-    plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-      new ExpirationPlugin({
-        maxEntries: 100,
-        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
-        purgeOnQuotaError: true,
-      }),
-    ],
-  })
+  async (options: {
+    event: ExtendableEvent;
+    request: Request;
+    url: URL;
+    params?: string[] | Record<string, unknown>;
+  }): Promise<Response> => {
+    const { request, url, event } = options;
+
+    // Try IndexedDB first (P2P received bundle)
+    const dbAsset = await getAssetFromDB(url.pathname);
+    if (dbAsset) {
+      console.log('[SW] Serving asset from IndexedDB:', url.pathname);
+      return assetToResponse(dbAsset);
+    }
+
+    // Fall back to CacheFirst strategy
+    const cacheFirst = new CacheFirst({
+      cacheName: STATIC_CACHE,
+      plugins: [
+        new CacheableResponsePlugin({ statuses: [0, 200] }),
+        new ExpirationPlugin({
+          maxEntries: 100,
+          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          purgeOnQuotaError: true,
+        }),
+      ],
+    });
+
+    return cacheFirst.handle({ request, event });
+  }
 );
 registerRoute(appShellRoute);
 
@@ -219,18 +345,18 @@ registerRoute(appShellRoute);
  * Try network first for fresh data, fall back to cache
  */
 const apiRoute = new Route(
-  ({ url }) => {
+  ({ url }) => 
     // Match Nostr relay WebSocket upgrades (handled separately)
     // Match any API endpoints
-    return (
+     (
       url.pathname.startsWith('/api/') ||
       // Common Nostr relay patterns
       url.protocol === 'wss:' ||
       url.pathname.includes('/relay') ||
       // External API calls
       url.origin !== self.location.origin
-    );
-  },
+    )
+  ,
   new NetworkFirst({
     cacheName: DYNAMIC_CACHE,
     networkTimeoutSeconds: 5,
@@ -271,20 +397,18 @@ const imageRoute = new Route(
 registerRoute(imageRoute);
 
 /**
- * Fonts - StaleWhileRevalidate
- * Cache fonts for fast loading with background refresh
+ * Fonts - CacheFirst
+ * Fonts never change, cache first for instant loading
  */
 const fontRoute = new Route(
-  ({ request, url }) => {
-    return (
+  ({ request, url }) => (
       request.destination === 'font' ||
       url.pathname.endsWith('.woff') ||
       url.pathname.endsWith('.woff2') ||
       url.pathname.endsWith('.ttf') ||
       url.pathname.endsWith('.otf')
-    );
-  },
-  new StaleWhileRevalidate({
+    ),
+  new CacheFirst({
     cacheName: FONT_CACHE,
     plugins: [
       new CacheableResponsePlugin({
@@ -302,51 +426,21 @@ registerRoute(fontRoute);
 
 /**
  * Offline Fallback
- * Show offline page when network and cache both fail
+ * Catch handler for when all routes fail (network and cache both miss)
+ * This works with the NavigationRoute above which uses CacheFirst via createHandlerBoundToURL
  */
-const OFFLINE_URL = '/offline.html';
+setCatchHandler(async ({ request }) => {
+  // For navigation requests, serve cached index.html or offline page
+  if (request.destination === 'document' || request.mode === 'navigate') {
+    const cachedIndex = await caches.match('/index.html');
+    if (cachedIndex) return cachedIndex;
 
-// Serve offline page for failed navigation requests
-self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      (async () => {
-        try {
-          // Try to get from precache first
-          const preloadResponse = event.preloadResponse;
-          if (preloadResponse) {
-            const response = await preloadResponse;
-            if (response) return response;
-          }
-
-          // Try network
-          const networkResponse = await fetch(event.request);
-          return networkResponse;
-        } catch (error) {
-          // Network failed, try cache
-          const cachedResponse = await caches.match(event.request);
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-
-          // All failed, return offline page
-          const offlineResponse = await caches.match(OFFLINE_URL);
-          if (offlineResponse) {
-            return offlineResponse;
-          }
-
-          // Final fallback - should never reach here
-          return new Response('Offline', {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: new Headers({
-              'Content-Type': 'text/plain',
-            }),
-          });
-        }
-      })()
-    );
+    const offlinePage = await caches.match('/offline.html');
+    if (offlinePage) return offlinePage;
   }
+
+  // For other requests, return error
+  return Response.error();
 });
 
 /**
@@ -735,6 +829,30 @@ self.addEventListener('message', (event) => {
       self.registration.getNotifications().then((notifications) => {
         notifications.forEach((n) => n.close());
       });
+      break;
+
+    case 'BUNDLE_UPDATED':
+      // Notify all clients that a new P2P bundle is available
+      self.clients.matchAll({ type: 'window' }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({
+            type: 'BUNDLE_READY',
+            version: data?.version,
+            hash: data?.hash,
+          });
+        });
+      });
+      break;
+
+    case 'CHECK_BUNDLE':
+      // Check if we have a P2P bundle in IndexedDB
+      (async () => {
+        const asset = await getAssetFromDB('/index.html');
+        event.source?.postMessage({
+          type: 'BUNDLE_STATUS',
+          hasBundle: !!asset,
+        });
+      })();
       break;
 
     default:

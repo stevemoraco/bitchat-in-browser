@@ -141,13 +141,11 @@ export async function registerSW(options: RegisterSWOptions = {}): Promise<Regis
   // Register immediately or wait for load
   if (immediate) {
     await doRegister();
-  } else {
-    if (document.readyState === 'complete') {
+  } else if (document.readyState === 'complete') {
       await doRegister();
     } else {
       window.addEventListener('load', doRegister);
     }
-  }
 
   return createResult();
 }

@@ -11,7 +11,7 @@
  * - Section headers
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useMemo, useCallback } from 'preact/hooks';
 import {
   useChannelsStore,
@@ -216,13 +216,11 @@ export const ChannelsList: FunctionComponent<ChannelsListProps> = ({
     if (!searchQuery.trim()) return channels;
 
     const query = searchQuery.toLowerCase();
-    return channels.filter((channel) => {
-      return (
+    return channels.filter((channel) => (
         channel.name.toLowerCase().includes(query) ||
         channel.geohash?.toLowerCase().includes(query) ||
         channel.description?.toLowerCase().includes(query)
-      );
-    });
+      ));
   }, [channels, searchQuery]);
 
   // Group channels by type

@@ -14,7 +14,8 @@
  */
 
 import Dexie, { type Table } from 'dexie';
-import { NetworkStatusService, getNetworkStatus, type NetworkStatusEvent } from './network-status';
+import type { NetworkStatusService} from './network-status';
+import { getNetworkStatus, type NetworkStatusEvent } from './network-status';
 
 // ============================================================================
 // Types

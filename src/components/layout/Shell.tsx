@@ -15,7 +15,7 @@
  * Safe area support for notch and home indicator.
  */
 
-import { FunctionComponent, ComponentChildren } from 'preact';
+import type { FunctionComponent, ComponentChildren } from 'preact';
 import { Header } from './Header';
 import { Navigation } from './Navigation';
 import { StatusBar, CompactStatusBar } from './StatusBar';
@@ -98,8 +98,10 @@ export const Shell: FunctionComponent<ShellProps> = ({
   const isSidebarLayout = navigationLayout === 'sidebar';
 
   // Calculate main content padding
+  // pt-12 accounts for the fixed header height (48px)
   const mainContentClasses = `
     main-content flex-1 overflow-y-auto overflow-x-hidden
+    ${shouldShowHeader ? 'pt-12' : ''}
     ${shouldShowNavigation && !isSidebarLayout ? 'pb-14' : ''}
     ${isSidebarLayout ? 'main-content-with-sidebar' : ''}
     ${isLandscape && isMobile ? 'landscape-safe-x' : ''}
@@ -133,8 +135,6 @@ export const Shell: FunctionComponent<ShellProps> = ({
         {/* Header */}
         {shouldShowHeader && (
           <Header
-            syncProgress={syncProgress}
-            relayCount={relayCount}
             onEmergencyWipe={onEmergencyWipe}
           />
         )}
@@ -209,8 +209,7 @@ interface MinimalShellProps {
 export const MinimalShell: FunctionComponent<MinimalShellProps> = ({
   children,
   title = 'BitChat In Browser',
-}) => {
-  return (
+}) => (
     <div class="min-h-screen min-h-[100dvh] bg-terminal-bg text-terminal-green font-mono flex flex-col">
       {/* Minimal header */}
       <header class="px-4 py-3 border-b border-terminal-green/30" role="banner">
@@ -239,7 +238,6 @@ export const MinimalShell: FunctionComponent<MinimalShellProps> = ({
       </footer>
     </div>
   );
-};
 
 // ============================================================================
 // Loading Shell (for initial app load)
@@ -251,8 +249,7 @@ interface LoadingShellProps {
 
 export const LoadingShell: FunctionComponent<LoadingShellProps> = ({
   message = 'Initializing BitChat...',
-}) => {
-  return (
+}) => (
     <div
       class="min-h-screen min-h-[100dvh] bg-terminal-bg text-terminal-green font-mono flex flex-col items-center justify-center p-4"
       role="main"
@@ -294,7 +291,6 @@ export const LoadingShell: FunctionComponent<LoadingShellProps> = ({
       </div>
     </div>
   );
-};
 
 // ============================================================================
 // Error Shell (for fatal errors)
@@ -308,8 +304,7 @@ interface ErrorShellProps {
 export const ErrorShell: FunctionComponent<ErrorShellProps> = ({
   error,
   onRetry,
-}) => {
-  return (
+}) => (
     <div
       class="min-h-screen min-h-[100dvh] bg-terminal-bg text-terminal-green font-mono flex flex-col items-center justify-center p-4"
       role="main"
@@ -353,6 +348,5 @@ export const ErrorShell: FunctionComponent<ErrorShellProps> = ({
       </div>
     </div>
   );
-};
 
 export default Shell;

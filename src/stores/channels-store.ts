@@ -222,43 +222,33 @@ export const getActiveChannel = (): Channel | undefined => {
 /**
  * Hook to get the active channel
  */
-export const useActiveChannel = (): Channel | undefined => {
-  return useChannelsStore((state) =>
+export const useActiveChannel = (): Channel | undefined => useChannelsStore((state) =>
     state.channels.find((c) => c.id === state.activeChannelId)
   );
-};
 
 /**
  * Get a channel by ID
  */
-export const getChannelById = (channelId: string): Channel | undefined => {
-  return useChannelsStore.getState().channels.find((c) => c.id === channelId);
-};
+export const getChannelById = (channelId: string): Channel | undefined => useChannelsStore.getState().channels.find((c) => c.id === channelId);
 
 /**
  * Hook to get a channel by ID
  */
-export const useChannel = (channelId: string): Channel | undefined => {
-  return useChannelsStore((state) =>
+export const useChannel = (channelId: string): Channel | undefined => useChannelsStore((state) =>
     state.channels.find((c) => c.id === channelId)
   );
-};
 
 /**
  * Get channels by type
  */
-export const getChannelsByType = (type: ChannelType): Channel[] => {
-  return useChannelsStore.getState().channels.filter((c) => c.type === type);
-};
+export const getChannelsByType = (type: ChannelType): Channel[] => useChannelsStore.getState().channels.filter((c) => c.type === type);
 
 /**
  * Hook to get channels by type
  */
-export const useChannelsByType = (type: ChannelType): Channel[] => {
-  return useChannelsStore((state) =>
+export const useChannelsByType = (type: ChannelType): Channel[] => useChannelsStore((state) =>
     state.channels.filter((c) => c.type === type)
   );
-};
 
 /**
  * Get sorted channels (pinned first, then by last message)
@@ -278,80 +268,64 @@ export const getSortedChannels = (): Channel[] => {
 /**
  * Hook to get sorted channels
  */
-export const useSortedChannels = (): Channel[] => {
-  return useChannelsStore((state) =>
+export const useSortedChannels = (): Channel[] => useChannelsStore((state) =>
     [...state.channels].sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
       return b.lastMessageAt - a.lastMessageAt;
     })
   );
-};
 
 /**
  * Get total unread count across all channels
  */
-export const getTotalUnreadCount = (): number => {
-  return useChannelsStore
+export const getTotalUnreadCount = (): number => useChannelsStore
     .getState()
     .channels.reduce((total, c) => total + c.unreadCount, 0);
-};
 
 /**
  * Hook to get total unread count
  */
-export const useTotalUnreadCount = (): number => {
-  return useChannelsStore((state) =>
+export const useTotalUnreadCount = (): number => useChannelsStore((state) =>
     state.channels.reduce((total, c) => total + c.unreadCount, 0)
   );
-};
 
 /**
  * Get channels with unread messages
  */
-export const getUnreadChannels = (): Channel[] => {
-  return useChannelsStore
+export const getUnreadChannels = (): Channel[] => useChannelsStore
     .getState()
     .channels.filter((c) => c.unreadCount > 0);
-};
 
 /**
  * Hook to get channels with unread messages
  */
-export const useUnreadChannels = (): Channel[] => {
-  return useChannelsStore((state) =>
+export const useUnreadChannels = (): Channel[] => useChannelsStore((state) =>
     state.channels.filter((c) => c.unreadCount > 0)
   );
-};
 
 /**
  * Get DM channel by peer fingerprint
  */
-export const getDMChannel = (peerFingerprint: string): Channel | undefined => {
-  return useChannelsStore
+export const getDMChannel = (peerFingerprint: string): Channel | undefined => useChannelsStore
     .getState()
     .channels.find(
       (c) => c.type === 'dm' && c.dmPeerFingerprint === peerFingerprint
     );
-};
 
 /**
  * Hook to get DM channel by peer fingerprint
  */
-export const useDMChannel = (peerFingerprint: string): Channel | undefined => {
-  return useChannelsStore((state) =>
+export const useDMChannel = (peerFingerprint: string): Channel | undefined => useChannelsStore((state) =>
     state.channels.find(
       (c) => c.type === 'dm' && c.dmPeerFingerprint === peerFingerprint
     )
   );
-};
 
 /**
  * Check if a channel exists
  */
-export const channelExists = (channelId: string): boolean => {
-  return useChannelsStore.getState().channels.some((c) => c.id === channelId);
-};
+export const channelExists = (channelId: string): boolean => useChannelsStore.getState().channels.some((c) => c.id === channelId);
 
 // ============================================================================
 // Utilities

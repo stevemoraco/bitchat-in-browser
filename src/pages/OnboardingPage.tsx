@@ -8,7 +8,7 @@
  * - Persists onboarding state
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useEffect, useState, useCallback } from 'preact/hooks';
 import { OnboardingFlow } from '../components/onboarding/OnboardingFlow';
 import { useSettingsStore } from '../stores/settings-store';

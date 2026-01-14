@@ -12,7 +12,7 @@
  * @module components/loading/Skeleton
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 
 // ============================================================================
@@ -243,8 +243,7 @@ export const SkeletonMessage: FunctionComponent<SkeletonMessageProps> = ({
 export const SkeletonChannel: FunctionComponent<SkeletonBaseProps> = ({
   class: className = '',
   animate = true,
-}) => {
-  return (
+}) => (
     <div
       class={`flex items-center gap-3 px-4 py-3 ${className}`}
       aria-hidden="true"
@@ -262,7 +261,6 @@ export const SkeletonChannel: FunctionComponent<SkeletonBaseProps> = ({
       </div>
     </div>
   );
-};
 
 /**
  * Peer item skeleton (for peer list loading)
@@ -270,8 +268,7 @@ export const SkeletonChannel: FunctionComponent<SkeletonBaseProps> = ({
 export const SkeletonPeer: FunctionComponent<SkeletonBaseProps> = ({
   class: className = '',
   animate = true,
-}) => {
-  return (
+}) => (
     <div
       class={`flex items-center gap-3 px-4 py-3 ${className}`}
       aria-hidden="true"
@@ -292,15 +289,13 @@ export const SkeletonPeer: FunctionComponent<SkeletonBaseProps> = ({
       <SkeletonLine width="60px" height="md" animate={animate} />
     </div>
   );
-};
 
 /**
  * Settings section skeleton
  */
 export const SkeletonSettings: FunctionComponent<
   SkeletonBaseProps & { rows?: number }
-> = ({ rows = 4, class: className = '', animate = true }) => {
-  return (
+> = ({ rows = 4, class: className = '', animate = true }) => (
     <div class={`space-y-4 ${className}`} aria-hidden="true">
       {/* Section header */}
       <div class="flex items-center gap-2 mb-4">
@@ -323,7 +318,6 @@ export const SkeletonSettings: FunctionComponent<
       ))}
     </div>
   );
-};
 
 // ============================================================================
 // List Skeleton Components
@@ -360,30 +354,26 @@ export const SkeletonMessageList: FunctionComponent<
  */
 export const SkeletonChannelList: FunctionComponent<
   SkeletonBaseProps & { count?: number }
-> = ({ count = 5, class: className = '', animate = true }) => {
-  return (
+> = ({ count = 5, class: className = '', animate = true }) => (
     <div class={`divide-y divide-terminal-green/10 ${className}`} aria-hidden="true" role="status" aria-label="Loading channels">
       {Array.from({ length: count }, (_, i) => (
         <SkeletonChannel key={i} animate={animate} />
       ))}
     </div>
   );
-};
 
 /**
  * Peer list skeleton
  */
 export const SkeletonPeerList: FunctionComponent<
   SkeletonBaseProps & { count?: number }
-> = ({ count = 5, class: className = '', animate = true }) => {
-  return (
+> = ({ count = 5, class: className = '', animate = true }) => (
     <div class={`divide-y divide-terminal-green/10 ${className}`} aria-hidden="true" role="status" aria-label="Loading peers">
       {Array.from({ length: count }, (_, i) => (
         <SkeletonPeer key={i} animate={animate} />
       ))}
     </div>
   );
-};
 
 // ============================================================================
 // Terminal-Style Skeleton
@@ -430,8 +420,7 @@ export const SkeletonTerminal: FunctionComponent<
  */
 export const SkeletonCode: FunctionComponent<
   SkeletonBaseProps & { lines?: number }
-> = ({ lines = 5, class: className = '', animate = true }) => {
-  return (
+> = ({ lines = 5, class: className = '', animate = true }) => (
     <div
       class={`
         bg-terminal-bg border border-terminal-green/20 rounded-terminal p-3
@@ -454,7 +443,6 @@ export const SkeletonCode: FunctionComponent<
       })}
     </div>
   );
-};
 
 // ============================================================================
 // Exports

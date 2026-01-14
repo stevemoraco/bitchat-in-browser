@@ -11,7 +11,7 @@
  * @module components/a11y/SkipLinks
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 
 // ============================================================================
 // Constants
@@ -108,8 +108,7 @@ export const SkipLinks: FunctionComponent<SkipLinksProps> = ({
   mainContentId = SKIP_LINK_TARGETS.main,
   navigationId = SKIP_LINK_TARGETS.navigation,
   showNavigationLink = true,
-}) => {
-  return (
+}) => (
     <div
       class="skip-links"
       role="navigation"
@@ -121,7 +120,6 @@ export const SkipLinks: FunctionComponent<SkipLinksProps> = ({
       )}
     </div>
   );
-};
 
 // ============================================================================
 // Utility function for setting up skip link targets

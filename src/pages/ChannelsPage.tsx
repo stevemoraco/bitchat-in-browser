@@ -8,7 +8,7 @@
  * - Route handling
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback } from 'preact/hooks';
 import { useActiveChannel, useChannelsStore } from '../stores/channels-store';
 import type { Channel } from '../stores/types';
@@ -231,7 +231,7 @@ export const ChannelsPage: FunctionComponent<ChannelsPageProps> = ({
   return (
     <div class="flex flex-col h-screen bg-background text-text font-mono">
       {/* App Header */}
-      <Header onSettingsClick={handleSettingsClick} isOnline={true} />
+      <Header onSettingsClick={handleSettingsClick} isOnline />
 
       {/* Active Channel Bar (when a channel is selected) */}
       {activeChannel && (

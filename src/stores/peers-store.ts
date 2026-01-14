@@ -219,148 +219,112 @@ export const usePeersStore = create<PeersStore>()(
 /**
  * Get all peers as an array
  */
-export const getAllPeers = (): Peer[] => {
-  return Object.values(usePeersStore.getState().peers);
-};
+export const getAllPeers = (): Peer[] => Object.values(usePeersStore.getState().peers);
 
 /**
  * Hook to get all peers
  */
-export const usePeers = (): Peer[] => {
-  return usePeersStore((state) => Object.values(state.peers));
-};
+export const usePeers = (): Peer[] => usePeersStore((state) => Object.values(state.peers));
 
 /**
  * Get a peer by fingerprint
  */
-export const getPeer = (fingerprint: string): Peer | undefined => {
-  return usePeersStore.getState().peers[fingerprint];
-};
+export const getPeer = (fingerprint: string): Peer | undefined => usePeersStore.getState().peers[fingerprint];
 
 /**
  * Hook to get a peer by fingerprint
  */
-export const usePeer = (fingerprint: string): Peer | undefined => {
-  return usePeersStore((state) => state.peers[fingerprint]);
-};
+export const usePeer = (fingerprint: string): Peer | undefined => usePeersStore((state) => state.peers[fingerprint]);
 
 /**
  * Get online peers
  */
-export const getOnlinePeers = (): Peer[] => {
-  return Object.values(usePeersStore.getState().peers).filter(
+export const getOnlinePeers = (): Peer[] => Object.values(usePeersStore.getState().peers).filter(
     (p) => p.status === 'online'
   );
-};
 
 /**
  * Hook to get online peers
  */
-export const useOnlinePeers = (): Peer[] => {
-  return usePeersStore((state) =>
+export const useOnlinePeers = (): Peer[] => usePeersStore((state) =>
     Object.values(state.peers).filter((p) => p.status === 'online')
   );
-};
 
 /**
  * Get trusted peers
  */
-export const getTrustedPeers = (): Peer[] => {
-  return Object.values(usePeersStore.getState().peers).filter(
+export const getTrustedPeers = (): Peer[] => Object.values(usePeersStore.getState().peers).filter(
     (p) => p.isTrusted
   );
-};
 
 /**
  * Hook to get trusted peers
  */
-export const useTrustedPeers = (): Peer[] => {
-  return usePeersStore((state) =>
+export const useTrustedPeers = (): Peer[] => usePeersStore((state) =>
     Object.values(state.peers).filter((p) => p.isTrusted)
   );
-};
 
 /**
  * Get blocked peers
  */
-export const getBlockedPeers = (): Peer[] => {
-  return Object.values(usePeersStore.getState().peers).filter(
+export const getBlockedPeers = (): Peer[] => Object.values(usePeersStore.getState().peers).filter(
     (p) => p.isBlocked
   );
-};
 
 /**
  * Hook to get blocked peers
  */
-export const useBlockedPeers = (): Peer[] => {
-  return usePeersStore((state) =>
+export const useBlockedPeers = (): Peer[] => usePeersStore((state) =>
     Object.values(state.peers).filter((p) => p.isBlocked)
   );
-};
 
 /**
  * Get peers by source
  */
-export const getPeersBySource = (source: PeerSource): Peer[] => {
-  return Object.values(usePeersStore.getState().peers).filter(
+export const getPeersBySource = (source: PeerSource): Peer[] => Object.values(usePeersStore.getState().peers).filter(
     (p) => p.source === source
   );
-};
 
 /**
  * Hook to get peers by source
  */
-export const usePeersBySource = (source: PeerSource): Peer[] => {
-  return usePeersStore((state) =>
+export const usePeersBySource = (source: PeerSource): Peer[] => usePeersStore((state) =>
     Object.values(state.peers).filter((p) => p.source === source)
   );
-};
 
 /**
  * Check if a peer exists
  */
-export const peerExists = (fingerprint: string): boolean => {
-  return fingerprint in usePeersStore.getState().peers;
-};
+export const peerExists = (fingerprint: string): boolean => fingerprint in usePeersStore.getState().peers;
 
 /**
  * Check if a peer is blocked
  */
-export const isPeerBlocked = (fingerprint: string): boolean => {
-  return usePeersStore.getState().peers[fingerprint]?.isBlocked ?? false;
-};
+export const isPeerBlocked = (fingerprint: string): boolean => usePeersStore.getState().peers[fingerprint]?.isBlocked ?? false;
 
 /**
  * Get peer count
  */
-export const getPeerCount = (): number => {
-  return Object.keys(usePeersStore.getState().peers).length;
-};
+export const getPeerCount = (): number => Object.keys(usePeersStore.getState().peers).length;
 
 /**
  * Hook to get peer count
  */
-export const usePeerCount = (): number => {
-  return usePeersStore((state) => Object.keys(state.peers).length);
-};
+export const usePeerCount = (): number => usePeersStore((state) => Object.keys(state.peers).length);
 
 /**
  * Get online peer count
  */
-export const getOnlinePeerCount = (): number => {
-  return Object.values(usePeersStore.getState().peers).filter(
+export const getOnlinePeerCount = (): number => Object.values(usePeersStore.getState().peers).filter(
     (p) => p.status === 'online'
   ).length;
-};
 
 /**
  * Hook to get online peer count
  */
-export const useOnlinePeerCount = (): number => {
-  return usePeersStore((state) =>
+export const useOnlinePeerCount = (): number => usePeersStore((state) =>
     Object.values(state.peers).filter((p) => p.status === 'online').length
   );
-};
 
 /**
  * Search peers by nickname

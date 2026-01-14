@@ -204,3 +204,10 @@ export {
   type UseDeepLinkReturn,
   type NavLinkProps,
 } from './useNavigation';
+
+export {
+  useKeyboardHeight,
+  useKeyboardCSSVariable,
+  type KeyboardState,
+  type UseKeyboardHeightOptions,
+} from './useKeyboardHeight';

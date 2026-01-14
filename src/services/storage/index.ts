@@ -166,6 +166,9 @@ export {
   getLatestVersion,
 } from './migrations';
 
+// App Bundle Store (for P2P app distribution)
+export * from './app-bundle-store';
+
 /**
  * Default export is the storage manager getter for convenience.
  *

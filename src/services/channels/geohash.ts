@@ -285,7 +285,7 @@ export function decode(geohash: string): DecodedGeohash {
   let isLon = true;
 
   for (const char of normalizedHash) {
-    const value = GEOHASH_DECODE[char]!; // Validated above
+    const value = GEOHASH_DECODE[char]; // Validated above
 
     for (let bit = 4; bit >= 0; bit--) {
       const bitValue = (value >> bit) & 1;
@@ -374,18 +374,18 @@ export function getNeighbor(geohash: string, direction: 'n' | 's' | 'e' | 'w'): 
   const parent = normalizedHash.substring(0, normalizedHash.length - 1);
   const type: 'even' | 'odd' = normalizedHash.length % 2 === 0 ? 'even' : 'odd';
 
-  const borderChars = BORDER_CHARS[direction][type]!;
-  const neighborChars = NEIGHBOR_ENCODE[direction][type]!;
+  const borderChars = BORDER_CHARS[direction][type];
+  const neighborChars = NEIGHBOR_ENCODE[direction][type];
 
   // If on border, need to get neighbor of parent first
   if (borderChars.indexOf(lastChar) !== -1 && parent.length > 0) {
     const parentNeighbor = getNeighbor(parent, direction);
     const neighborIndex = neighborChars.indexOf(lastChar);
-    return parentNeighbor + GEOHASH_ALPHABET[neighborIndex]!;
+    return parentNeighbor + GEOHASH_ALPHABET[neighborIndex];
   }
 
   const neighborIndex = neighborChars.indexOf(lastChar);
-  return parent + GEOHASH_ALPHABET[neighborIndex]!;
+  return parent + GEOHASH_ALPHABET[neighborIndex];
 }
 
 /**
@@ -513,7 +513,7 @@ export function getCellSize(precision: number): { width: number; height: number 
     return size;
   }
   // Default to max precision if out of range
-  return PRECISION_METERS[12]!;
+  return PRECISION_METERS[12];
 }
 
 /**

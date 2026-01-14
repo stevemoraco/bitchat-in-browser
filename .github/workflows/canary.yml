@@ -1,0 +1,293 @@
+name: Synthetic Canary Testing
+
+on:
+  # Run every 15 minutes
+  schedule:
+    - cron: '*/15 * * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL to test (overrides default)'
+        required: false
+        type: string
+      cid:
+        description: 'IPFS CID to test via gateway'
+        required: false
+        type: string
+      generate_report:
+        description: 'Generate success rate report'
+        required: false
+        default: false
+        type: boolean
+
+  # Run after deployments
+  workflow_run:
+    workflows: ["Deploy to IPFS"]
+    types:
+      - completed
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  canary-test:
+    name: Synthetic Canary Test
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.generate_report != 'true' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Determine test URL
+        id: get-url
+        run: |
+          if [ -n "${{ github.event.inputs.url }}" ]; then
+            echo "url=${{ github.event.inputs.url }}" >> $GITHUB_OUTPUT
+            echo "source=input" >> $GITHUB_OUTPUT
+          elif [ -n "${{ github.event.inputs.cid }}" ]; then
+            echo "url=https://${{ github.event.inputs.cid }}.ipfs.dweb.link" >> $GITHUB_OUTPUT
+            echo "source=cid" >> $GITHUB_OUTPUT
+          elif [ -f deployment-history.json ]; then
+            CID=$(jq -r '.currentCid // empty' deployment-history.json)
+            if [ -n "$CID" ]; then
+              echo "url=https://${CID}.ipfs.dweb.link" >> $GITHUB_OUTPUT
+              echo "source=history" >> $GITHUB_OUTPUT
+            else
+              echo "url=https://bitbrowse.eth.limo" >> $GITHUB_OUTPUT
+              echo "source=default" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "url=https://bitbrowse.eth.limo" >> $GITHUB_OUTPUT
+            echo "source=default" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download canary history
+        uses: actions/download-artifact@v4
+        with:
+          name: canary-history
+          path: .
+        continue-on-error: true
+
+      - name: Run synthetic canary test
+        id: canary
+        continue-on-error: true
+        env:
+          CANARY_URL: ${{ steps.get-url.outputs.url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          npx tsx scripts/synthetic-canary.ts --url "$CANARY_URL" --alert --json > canary-result.json 2>&1 || true
+          cat canary-result.json
+
+          # Extract results
+          SUCCESS=$(jq -r '.success // false' canary-result.json 2>/dev/null || echo "false")
+          DURATION=$(jq -r '.totalDuration // 0' canary-result.json 2>/dev/null || echo "0")
+          FAILED_STEP=$(jq -r '.steps[] | select(.passed == false) | .name' canary-result.json 2>/dev/null | head -1 || echo "")
+
+          echo "success=${SUCCESS}" >> $GITHUB_OUTPUT
+          echo "duration=${DURATION}" >> $GITHUB_OUTPUT
+          echo "failed_step=${FAILED_STEP}" >> $GITHUB_OUTPUT
+
+      - name: Upload canary history
+        uses: actions/upload-artifact@v4
+        with:
+          name: canary-history
+          path: canary-history.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canary-result-${{ github.run_number }}
+          path: canary-result.json
+          retention-days: 7
+
+      - name: Update job summary
+        run: |
+          SUCCESS="${{ steps.canary.outputs.success }}"
+          DURATION="${{ steps.canary.outputs.duration }}"
+          FAILED_STEP="${{ steps.canary.outputs.failed_step }}"
+          URL="${{ steps.get-url.outputs.url }}"
+          SOURCE="${{ steps.get-url.outputs.source }}"
+
+          if [ "$SUCCESS" = "true" ]; then
+            EMOJI=":white_check_mark:"
+            STATUS="PASSED"
+          else
+            EMOJI=":x:"
+            STATUS="FAILED"
+          fi
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          # Synthetic Canary Test Results
+
+          **Status:** ${EMOJI} ${STATUS}
+          **URL:** ${URL}
+          **URL Source:** ${SOURCE}
+          **Duration:** $(echo "scale=2; ${DURATION}/1000" | bc)s
+          **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          EOF
+
+          if [ -n "$FAILED_STEP" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Failed Step:** ${FAILED_STEP}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          ## Test Steps
+          EOF
+
+          # Parse and display steps
+          if [ -f canary-result.json ]; then
+            jq -r '.steps[] | "- " + (if .passed then ":white_check_mark:" else ":x:" end) + " **" + .name + "** (" + (.duration|tostring) + "ms)" + (if .error then " - " + .error else "" end)' canary-result.json >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+          fi
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          ---
+          *Automated synthetic testing every 15 minutes*
+          EOF
+
+      - name: Check for rollback need
+        id: rollback-check
+        if: ${{ steps.canary.outputs.success != 'true' }}
+        run: |
+          # Check failure rate from history
+          if [ -f canary-history.json ]; then
+            SUCCESS_RATE=$(jq -r '.successRate24h // 100' canary-history.json 2>/dev/null || echo "100")
+            FAILURE_RATE=$(echo "100 - $SUCCESS_RATE" | bc)
+            echo "failure_rate=${FAILURE_RATE}" >> $GITHUB_OUTPUT
+
+            if (( $(echo "$FAILURE_RATE > 5" | bc -l) )); then
+              echo "needs_rollback=true" >> $GITHUB_OUTPUT
+            else
+              echo "needs_rollback=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "failure_rate=0" >> $GITHUB_OUTPUT
+            echo "needs_rollback=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger rollback workflow
+        if: ${{ steps.rollback-check.outputs.needs_rollback == 'true' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log('Failure rate exceeds threshold, triggering rollback workflow...');
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'rollback.yml',
+              ref: 'main',
+              inputs: {
+                auto: 'true',
+                reason: 'Canary failure rate exceeded 5%'
+              }
+            });
+
+      - name: Fail if canary failed
+        if: ${{ steps.canary.outputs.success != 'true' }}
+        run: |
+          echo "::error::Canary test failed at step: ${{ steps.canary.outputs.failed_step }}"
+          exit 1
+
+  success-report:
+    name: Generate Success Rate Report
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.generate_report == 'true' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download canary history
+        uses: actions/download-artifact@v4
+        with:
+          name: canary-history
+          path: .
+        continue-on-error: true
+
+      - name: Generate success report
+        run: npx tsx scripts/synthetic-canary.ts --report
+
+      - name: Create report issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let historyData = { entries: [], successRate24h: 0, successRate7d: 0 };
+            try {
+              historyData = JSON.parse(fs.readFileSync('canary-history.json', 'utf8'));
+            } catch (e) {
+              console.log('No history file found');
+            }
+
+            const totalTests = historyData.entries.length;
+            const failures = historyData.entries.filter(e => !e.success).length;
+
+            const failuresByStep = {};
+            historyData.entries.filter(e => !e.success).forEach(e => {
+              const step = e.failedStep || 'unknown';
+              failuresByStep[step] = (failuresByStep[step] || 0) + 1;
+            });
+
+            const failureBreakdown = Object.entries(failuresByStep)
+              .sort((a, b) => b[1] - a[1])
+              .map(([step, count]) => `- ${step}: ${count}`)
+              .join('\n') || 'No failures';
+
+            const body = `## Canary Success Rate Report
+
+            **Period:** Last 7 days
+            **Generated:** ${new Date().toISOString()}
+
+            ### Success Rates
+            - **Last 24 Hours:** ${historyData.successRate24h.toFixed(2)}%
+            - **Last 7 Days:** ${historyData.successRate7d.toFixed(2)}%
+
+            ### Statistics
+            - **Total Tests:** ${totalTests}
+            - **Total Failures:** ${failures}
+
+            ### Failure Breakdown by Step
+            ${failureBreakdown}
+
+            ---
+            *This report is generated automatically.*
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Report] Canary Success Rate Report - ${new Date().toISOString().split('T')[0]}`,
+              body: body,
+              labels: ['report', 'canary', 'automated']
+            });

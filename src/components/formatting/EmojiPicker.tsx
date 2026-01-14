@@ -4,7 +4,7 @@
  * A terminal-styled emoji picker with categories, search, and recent emojis.
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import {
   getEmojiShortcodes,
@@ -555,8 +555,7 @@ export const EmojiButton: FunctionComponent<EmojiButtonProps> = ({
   onClick,
   isOpen = false,
   className = '',
-}) => {
-  return (
+}) => (
     <button
       type="button"
       class={[
@@ -587,7 +586,6 @@ export const EmojiButton: FunctionComponent<EmojiButtonProps> = ({
       </svg>
     </button>
   );
-};
 
 // ============================================================================
 // EmojiPickerWithButton Component

@@ -11,7 +11,7 @@
  * @module components/loading/LoadingOverlay
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import { Spinner, DotsSpinner } from './Spinner';
 import { ProgressBar, StepProgress } from './Progress';
@@ -87,14 +87,14 @@ export const LoadingOverlay: FunctionComponent<LoadingOverlayProps> = ({
         });
       });
       return undefined;
-    } else {
+    } 
       setIsVisible(false);
       // Wait for fade out before removing from DOM
       const timeout = setTimeout(() => {
         setIsRendered(false);
       }, transitionDuration);
       return () => clearTimeout(timeout);
-    }
+    
   }, [visible, transitionDuration]);
 
   if (!isRendered) return null;
@@ -178,8 +178,7 @@ const DefaultOverlayContent: FunctionComponent<{
   progress?: number;
   indeterminate: boolean;
   showLogo: boolean;
-}> = ({ message, submessage, progress, indeterminate, showLogo }) => {
-  return (
+}> = ({ message, submessage, progress, indeterminate, showLogo }) => (
     <div class="text-center space-y-6 px-8 py-12 max-w-md">
       {/* Logo */}
       {showLogo && (
@@ -216,21 +215,18 @@ const DefaultOverlayContent: FunctionComponent<{
       )}
     </div>
   );
-};
 
 /**
  * Minimal overlay content
  */
 const MinimalOverlayContent: FunctionComponent<{
   message: string;
-}> = ({ message }) => {
-  return (
+}> = ({ message }) => (
     <div class="flex items-center gap-3 px-6 py-4 bg-terminal-bg border border-terminal-green/30 rounded-terminal shadow-terminal">
       <Spinner size="sm" />
       <span class="text-terminal-green/80 font-mono">{message}</span>
     </div>
   );
-};
 
 /**
  * Terminal-style overlay content
@@ -331,7 +327,7 @@ const StepsOverlayContent: FunctionComponent<{
         value={progress}
         variant="ascii"
         size="sm"
-        showPercentage={true}
+        showPercentage
       />
     </div>
   );
@@ -431,7 +427,7 @@ export const CryptoOverlay: FunctionComponent<{
       visible={visible}
       message={messages[operation]}
       variant="minimal"
-      indeterminate={true}
+      indeterminate
     />
   );
 };
@@ -442,8 +438,7 @@ export const CryptoOverlay: FunctionComponent<{
 export const TransitionOverlay: FunctionComponent<{
   visible: boolean;
   message?: string;
-}> = ({ visible, message = 'Loading...' }) => {
-  return (
+}> = ({ visible, message = 'Loading...' }) => (
     <LoadingOverlay
       visible={visible}
       message={message}
@@ -452,7 +447,6 @@ export const TransitionOverlay: FunctionComponent<{
       blur={false}
     />
   );
-};
 
 // ============================================================================
 // Exports

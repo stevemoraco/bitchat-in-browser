@@ -420,7 +420,7 @@ export class NetworkError extends BitChatError {
     return new NetworkError(`WebRTC connection failed to peer: ${peerId}`, {
       code: ErrorCode.WEBRTC_CONNECTION_FAILED,
       cause,
-      context: { data: { peerId: peerId.slice(0, 8) + '...' } },
+      context: { data: { peerId: `${peerId.slice(0, 8)  }...` } },
       recoverable: true,
       userMessage: 'Could not establish peer connection. Using relay instead.',
     });

@@ -7,11 +7,13 @@
  * - Delivery status indicator (pending/sent/delivered/read/failed)
  * - Sender fingerprint/name
  * - Reply preview if replying to message
+ * - Smooth entrance animations based on message direction
  */
 
-import { FunctionComponent } from 'preact';
-import { useMemo } from 'preact/hooks';
+import type { FunctionComponent } from 'preact';
+import { useMemo, useState, useEffect } from 'preact/hooks';
 import type { Message, MessageStatus } from '../../stores/types';
+import { VoiceMessage } from './VoiceMessage';
 
 // ============================================================================
 // Types
@@ -38,6 +40,10 @@ export interface MessageBubbleProps {
   onReplyClick?: (messageId: string) => void;
   /** Callback for long press/right click (context menu) */
   onContextMenu?: (message: Message) => void;
+  /** Whether this is a newly arrived message (enables entrance animation) */
+  isNew?: boolean;
+  /** Animation delay for stagger effect (in ms) */
+  animationDelay?: number;
 }
 
 // ============================================================================
@@ -165,7 +171,7 @@ const getStatusDisplay = (status: MessageStatus) => {
  */
 const truncateContent = (content: string, maxLength: number = 50): string => {
   if (content.length <= maxLength) return content;
-  return content.slice(0, maxLength) + '...';
+  return `${content.slice(0, maxLength)  }...`;
 };
 
 // ============================================================================
@@ -180,8 +186,21 @@ export const MessageBubble: FunctionComponent<MessageBubbleProps> = ({
   showStatus = true,
   onReplyClick,
   onContextMenu,
+  isNew = false,
+  animationDelay = 0,
 }) => {
   const { isOwn, type, content, senderNickname, senderFingerprint, timestamp, status } = message;
+  const [hasAnimated, setHasAnimated] = useState(!isNew);
+
+  // Clear animation state after animation completes
+  useEffect(() => {
+    if (isNew && !hasAnimated) {
+      const timer = setTimeout(() => {
+        setHasAnimated(true);
+      }, 500 + animationDelay);
+      return () => clearTimeout(timer);
+    }
+  }, [isNew, hasAnimated, animationDelay]);
 
   // Memoize computed values
   const formattedTime = useMemo(() => formatTime(timestamp), [timestamp]);
@@ -191,10 +210,31 @@ export const MessageBubble: FunctionComponent<MessageBubbleProps> = ({
     [senderFingerprint]
   );
 
+  // Determine animation class based on message type and direction
+  const getAnimationClass = (): string => {
+    if (hasAnimated || !isNew) return '';
+
+    if (type === 'system') {
+      return 'message-enter-system';
+    }
+    if (isOwn) {
+      return 'message-enter-sent';
+    }
+    return 'message-enter-received';
+  };
+
+  const animationClass = getAnimationClass();
+  const animationStyle = animationClass && animationDelay > 0
+    ? { animationDelay: `${animationDelay}ms` }
+    : undefined;
+
   // Handle system messages
   if (type === 'system') {
     return (
-      <div class="flex justify-center py-2 animate-terminal-fade-in">
+      <div
+        class={`flex justify-center py-2 ${animationClass || 'animate-terminal-fade-in'}`}
+        style={animationStyle}
+      >
         <div class="message-bubble-system">
           <span class="font-mono">{content}</span>
         </div>
@@ -212,7 +252,8 @@ export const MessageBubble: FunctionComponent<MessageBubbleProps> = ({
 
   return (
     <div
-      class={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} py-1 animate-terminal-fade-in`}
+      class={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} py-1 ${animationClass || 'animate-terminal-fade-in'}`}
+      style={animationStyle}
       onContextMenu={handleContextMenu}
     >
       {/* Sender name (for received messages in group chats) */}
@@ -234,7 +275,7 @@ export const MessageBubble: FunctionComponent<MessageBubbleProps> = ({
           onClick={() => onReplyClick?.(replyTo.id)}
           class={`mb-1 px-2 py-1 max-w-[80%] bg-surface/50 border-l-2 ${
             isOwn ? 'border-primary/50' : 'border-muted/50'
-          } rounded-terminal text-left hover:bg-surface transition-colors`}
+          } rounded-terminal text-left hover:bg-surface transition-colors btn-press`}
         >
           <div class="text-terminal-xs text-primary font-medium">
             {replyTo.senderNickname}
@@ -249,10 +290,20 @@ export const MessageBubble: FunctionComponent<MessageBubbleProps> = ({
       <div
         class={isOwn ? 'message-bubble-outgoing' : 'message-bubble-incoming'}
       >
-        {/* Message content */}
-        <div class="break-words whitespace-pre-wrap selectable">
-          {content}
-        </div>
+        {/* Voice message content */}
+        {type === 'voice' && message.voiceNoteId ? (
+          <VoiceMessage
+            voiceNoteId={message.voiceNoteId}
+            duration={message.voiceDuration}
+            waveformData={message.voiceWaveform}
+            isOwn={isOwn}
+          />
+        ) : (
+          /* Text message content */
+          <div class="break-words whitespace-pre-wrap selectable">
+            {content}
+          </div>
+        )}
 
         {/* Timestamp and status row */}
         {(showTimestamp || (showStatus && isOwn)) && (
@@ -278,7 +329,7 @@ export const MessageBubble: FunctionComponent<MessageBubbleProps> = ({
 
       {/* Failed message retry hint */}
       {isOwn && status === 'failed' && (
-        <div class="mt-1 text-terminal-xs text-error px-1">
+        <div class="mt-1 text-terminal-xs text-error px-1 animate-fade-in">
           Tap to retry
         </div>
       )}
@@ -314,13 +365,13 @@ export const DateSeparator: FunctionComponent<{ date: string }> = ({ date }) => 
  * Typing indicator bubble
  */
 export const TypingIndicator: FunctionComponent<{ nickname: string }> = ({ nickname }) => (
-  <div class="flex items-start py-1 animate-terminal-fade-in">
+  <div class="flex items-start py-1 animate-fade-in-up typing-indicator">
     <div class="message-bubble-incoming flex items-center gap-2">
       <span class="text-terminal-xs text-muted">{nickname} is typing</span>
       <span class="loading-dots">
-        <span></span>
-        <span></span>
-        <span></span>
+        <span />
+        <span />
+        <span />
       </span>
     </div>
   </div>

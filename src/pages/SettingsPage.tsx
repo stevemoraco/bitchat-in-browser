@@ -12,7 +12,7 @@
  * @module pages/SettingsPage
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState } from 'preact/hooks';
 import { IdentitySettings } from '../components/settings/IdentitySettings';
 import { PrivacySettings } from '../components/settings/PrivacySettings';

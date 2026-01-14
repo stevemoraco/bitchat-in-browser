@@ -249,7 +249,7 @@ export function validateEventStructure(
 
   // Validate signed event fields
   if ('id' in event && 'sig' in event) {
-    const signedEvent = event as NostrEvent;
+    const signedEvent = event;
 
     if (typeof signedEvent.id !== 'string' || signedEvent.id.length !== 64) {
       return { valid: false, error: 'Invalid id: must be 64 hex characters' };

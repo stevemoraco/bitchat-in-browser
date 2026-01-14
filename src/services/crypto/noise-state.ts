@@ -270,13 +270,13 @@ export class NoiseCipherState {
           }
 
           // TypeScript doesn't know replayWindow[i] is always valid here
-          (this.replayWindow as Uint8Array)[i] = newByte & 0xff;
+          (this.replayWindow)[i] = newByte & 0xff;
         }
       }
 
       this.highestReceivedNonce = receivedNonce;
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.replayWindow[0]! |= 1; // Mark most recent bit as seen
+      this.replayWindow[0] |= 1; // Mark most recent bit as seen
     } else {
       const offset = this.highestReceivedNonce - receivedNonce;
       const byteIndex = Math.floor(offset / 8);
@@ -383,9 +383,9 @@ export class NoiseCipherState {
       combined.set(nonceBytes, 0);
       combined.set(ciphertext, nonceBytes.length);
       return combined;
-    } else {
+    } 
       return ciphertext;
-    }
+    
   }
 
   /**
@@ -517,7 +517,7 @@ export class NoiseSymmetricState {
     const output = this.hkdf(this.chainingKey, inputKeyMaterial, 2);
     // HKDF always returns the requested number of outputs
     this.chainingKey = output[0]!;
-    this.cipherState.initializeKey(output[1]!);
+    this.cipherState.initializeKey(output[1]);
   }
 
   /**
@@ -555,10 +555,10 @@ export class NoiseSymmetricState {
       const ciphertext = this.cipherState.encrypt(plaintext, this.hash);
       this.mixHash(ciphertext);
       return ciphertext;
-    } else {
+    } 
       this.mixHash(plaintext);
       return plaintext;
-    }
+    
   }
 
   /**
@@ -569,10 +569,10 @@ export class NoiseSymmetricState {
       const plaintext = this.cipherState.decrypt(ciphertext, this.hash);
       this.mixHash(ciphertext);
       return plaintext;
-    } else {
+    } 
       this.mixHash(ciphertext);
       return ciphertext;
-    }
+    
   }
 
   /**
@@ -581,8 +581,8 @@ export class NoiseSymmetricState {
   split(useExtractedNonce: boolean): [NoiseCipherState, NoiseCipherState] {
     const output = this.hkdf(this.chainingKey, new Uint8Array(0), 2);
     // HKDF always returns the requested number of outputs
-    const c1 = new NoiseCipherState(output[0]!, useExtractedNonce);
-    const c2 = new NoiseCipherState(output[1]!, useExtractedNonce);
+    const c1 = new NoiseCipherState(output[0], useExtractedNonce);
+    const c2 = new NoiseCipherState(output[1], useExtractedNonce);
     return [c1, c2];
   }
 

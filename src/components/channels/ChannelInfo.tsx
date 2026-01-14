@@ -9,7 +9,7 @@
  * - Leave channel option
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback } from 'preact/hooks';
 import { useChannelsStore, useChannel } from '../../stores/channels-store';
 import type { Channel } from '../../stores/types';

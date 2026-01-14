@@ -19,14 +19,14 @@ import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
 import {
   performEmergencyWipe,
   quickWipe,
-  type WipeProgress,
-  type WipeResult,
-  type TriggerEvent,
-  type TriggerType,
   createKeyboardDetector,
   createShakeDetector,
   createDelayedTrigger,
   isMobileDevice,
+  type WipeProgress,
+  type WipeResult,
+  type TriggerEvent,
+  type TriggerType,
 } from '../features/emergency';
 
 // ============================================================================
@@ -308,16 +308,14 @@ export function useEmergencyWipe(
   }, [state, executeWipe]);
 
   // Cleanup on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       keyboardDetectorRef.current?.stop();
       shakeDetectorRef.current?.stop();
       delayedTriggerRef.current?.cancel();
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current);
       }
-    };
-  }, []);
+    }, []);
 
   // Computed values
   const canCancel = state === 'confirming' || state === 'countdown' || state === 'triggered';

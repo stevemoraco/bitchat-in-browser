@@ -147,57 +147,42 @@ export const selectIsKeyLoaded = (state: IdentityStore) =>
 /**
  * Hook to get the full identity
  */
-export const useIdentity = (): Identity | null => {
-  return useIdentityStore((state) => state.identity);
-};
+export const useIdentity = (): Identity | null => useIdentityStore((state) => state.identity);
 
 /**
  * Hook to get the public key
  */
-export const usePublicKey = (): string | null => {
-  return useIdentityStore((state) => state.identity?.publicKey ?? null);
-};
+export const usePublicKey = (): string | null => useIdentityStore((state) => state.identity?.publicKey ?? null);
 
 /**
  * Hook to get the fingerprint
  */
-export const useFingerprint = (): string | null => {
-  return useIdentityStore((state) => state.identity?.fingerprint ?? null);
-};
+export const useFingerprint = (): string | null => useIdentityStore((state) => state.identity?.fingerprint ?? null);
 
 /**
  * Hook to check if key is loaded
  */
-export const useIsKeyLoaded = (): boolean => {
-  return useIdentityStore((state) => state.identity?.isKeyLoaded ?? false);
-};
+export const useIsKeyLoaded = (): boolean => useIdentityStore((state) => state.identity?.isKeyLoaded ?? false);
 
 /**
  * Hook to check if identity exists
  */
-export const useHasIdentity = (): boolean => {
-  return useIdentityStore((state) => state.identity !== null);
-};
+export const useHasIdentity = (): boolean => useIdentityStore((state) => state.identity !== null);
 
 /**
  * Hook to get npub
  */
-export const useNpub = (): string | null => {
-  return useIdentityStore((state) => state.identity?.npub ?? null);
-};
+export const useNpub = (): string | null => useIdentityStore((state) => state.identity?.npub ?? null);
 
 /**
  * Hook to get NIP-05 identifier
  */
-export const useNip05 = (): string | null => {
-  return useIdentityStore((state) => state.identity?.nip05 ?? null);
-};
+export const useNip05 = (): string | null => useIdentityStore((state) => state.identity?.nip05 ?? null);
 
 /**
  * Hook to get display identifier (npub shortened or fingerprint)
  */
-export const useDisplayId = (): string | null => {
-  return useIdentityStore((state) => {
+export const useDisplayId = (): string | null => useIdentityStore((state) => {
     if (!state.identity) return null;
 
     // If npub exists, return shortened version
@@ -209,7 +194,6 @@ export const useDisplayId = (): string | null => {
     // Otherwise return fingerprint
     return state.identity.fingerprint;
   });
-};
 
 // ============================================================================
 // Utilities

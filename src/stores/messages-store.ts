@@ -215,16 +215,12 @@ export const useMessagesStore = create<MessagesStore>()(
 /**
  * Get messages for a specific channel
  */
-export const getMessagesForChannel = (channelId: string): Message[] => {
-  return useMessagesStore.getState().messages[channelId] || [];
-};
+export const getMessagesForChannel = (channelId: string): Message[] => useMessagesStore.getState().messages[channelId] || [];
 
 /**
  * Hook to get messages for a channel
  */
-export const useChannelMessages = (channelId: string): Message[] => {
-  return useMessagesStore((state) => state.messages[channelId] || []);
-};
+export const useChannelMessages = (channelId: string): Message[] => useMessagesStore((state) => state.messages[channelId] || []);
 
 /**
  * Get unread count for a channel
@@ -237,12 +233,10 @@ export const getUnreadCount = (channelId: string): number => {
 /**
  * Hook to get unread count for a channel
  */
-export const useUnreadCount = (channelId: string): number => {
-  return useMessagesStore((state) => {
+export const useUnreadCount = (channelId: string): number => useMessagesStore((state) => {
     const messages = state.messages[channelId] || [];
     return messages.filter((m) => !m.isRead && !m.isOwn).length;
   });
-};
 
 /**
  * Get the last message for a channel
@@ -255,40 +249,28 @@ export const getLastMessage = (channelId: string): Message | undefined => {
 /**
  * Hook to get the last message for a channel
  */
-export const useLastMessage = (channelId: string): Message | undefined => {
-  return useMessagesStore((state) => {
+export const useLastMessage = (channelId: string): Message | undefined => useMessagesStore((state) => {
     const messages = state.messages[channelId] || [];
     return messages[messages.length - 1];
   });
-};
 
 /**
  * Get all channel IDs that have messages
  */
-export const getChannelIdsWithMessages = (): string[] => {
-  return Object.keys(useMessagesStore.getState().messages);
-};
+export const getChannelIdsWithMessages = (): string[] => Object.keys(useMessagesStore.getState().messages);
 
 /**
  * Get total unread count across all channels
  */
 export const getTotalUnreadCount = (): number => {
   const allMessages = useMessagesStore.getState().messages;
-  return Object.values(allMessages).reduce((total, messages) => {
-    return total + messages.filter((m) => !m.isRead && !m.isOwn).length;
-  }, 0);
+  return Object.values(allMessages).reduce((total, messages) => total + messages.filter((m) => !m.isRead && !m.isOwn).length, 0);
 };
 
 /**
  * Hook to get total unread count
  */
-export const useTotalUnreadCount = (): number => {
-  return useMessagesStore((state) => {
-    return Object.values(state.messages).reduce((total, messages) => {
-      return total + messages.filter((m) => !m.isRead && !m.isOwn).length;
-    }, 0);
-  });
-};
+export const useTotalUnreadCount = (): number => useMessagesStore((state) => Object.values(state.messages).reduce((total, messages) => total + messages.filter((m) => !m.isRead && !m.isOwn).length, 0));
 
 /**
  * Search messages across all channels

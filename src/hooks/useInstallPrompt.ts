@@ -263,12 +263,12 @@ export function useInstallPrompt(): UseInstallPromptReturn {
       if (outcome === 'accepted') {
         console.log('[PWA] User accepted the install prompt');
         return true;
-      } else {
+      } 
         console.log('[PWA] User dismissed the install prompt');
         saveDismissal();
         setIsDismissed(true);
         return false;
-      }
+      
     } catch (error) {
       console.error('[PWA] Error showing install prompt:', error);
       return false;

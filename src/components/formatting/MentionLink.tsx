@@ -5,7 +5,7 @@
  * or a shortened pubkey if not. Navigates to peer profile on click.
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useMemo, useCallback } from 'preact/hooks';
 import { usePeersStore, usePeer } from '../../stores/peers-store';
 
@@ -109,7 +109,7 @@ export const MentionLink: FunctionComponent<MentionLinkProps> = ({
   const displayName = useMemo(() => {
     if (peerInfo?.nickname) {
       if (compact && peerInfo.nickname.length > 15) {
-        return peerInfo.nickname.slice(0, 12) + '...';
+        return `${peerInfo.nickname.slice(0, 12)  }...`;
       }
       return peerInfo.nickname;
     }

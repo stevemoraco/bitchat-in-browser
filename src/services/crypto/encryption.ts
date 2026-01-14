@@ -6,7 +6,8 @@
  */
 
 import { getSodium, ensureSodiumReady } from './init';
-import { EncryptedData, CryptoConstants } from './types';
+import type { EncryptedData} from './types';
+import { CryptoConstants } from './types';
 
 /**
  * Encrypt data using XChaCha20-Poly1305 authenticated encryption.

@@ -18,9 +18,9 @@
  * - /share - P2P sharing page
  */
 
-import { FunctionComponent, ComponentChildren } from 'preact';
+import type { FunctionComponent, ComponentChildren } from 'preact';
 import { useState, useEffect, useCallback } from 'preact/hooks';
-import Router, { Route, RouterOnChangeArgs } from 'preact-router';
+import Router, { Route, type RouterOnChangeArgs } from 'preact-router';
 import {
   hashHistory,
   push,

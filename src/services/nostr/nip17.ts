@@ -268,7 +268,7 @@ export function createSeal(
     pubkey: '', // Will be set by finalizeEvent
   };
 
-  const signedSeal = finalizeEvent(sealTemplate, privateKeyBytes) as VerifiedEvent;
+  const signedSeal = finalizeEvent(sealTemplate, privateKeyBytes);
 
   return signedSeal as NostrEvent;
 }
@@ -316,7 +316,7 @@ export function createGiftWrap(
   const signedWrap = finalizeEvent(
     wrapTemplate,
     ephemeralPrivateKey
-  ) as VerifiedEvent;
+  );
 
   return signedWrap as NostrEvent;
 }
@@ -633,8 +633,8 @@ export function buildConversations(messages: DecryptedMessage[]): Conversation[]
   for (const [id, msgs] of grouped) {
     if (msgs.length === 0) continue;
 
-    const firstMessage = msgs[0]!;
-    const lastMessage = msgs[msgs.length - 1]!;
+    const firstMessage = msgs[0];
+    const lastMessage = msgs[msgs.length - 1];
 
     conversations.push({
       id,

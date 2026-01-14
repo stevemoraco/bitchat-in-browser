@@ -59,8 +59,132 @@
 }
 
 /* ==========================================================================
-   Message Bubble Component
+   IRC-Style Message Component
    ========================================================================== */
+
+/* Message list container */
+.irc-message-list {
+  @apply font-mono;
+}
+
+/* Base IRC message row */
+.irc-message {
+  @apply flex items-start gap-1;
+  @apply py-0.5 px-1;
+  @apply text-terminal-sm;
+  @apply font-mono;
+  @apply text-left;
+}
+
+.irc-message:hover {
+  @apply bg-surface/30;
+}
+
+/* Timestamp [HH:MM] */
+.irc-timestamp {
+  @apply text-muted;
+  @apply flex-shrink-0;
+}
+
+/* Nick wrapper with angle brackets */
+.irc-nick-wrapper {
+  @apply text-muted;
+  @apply flex-shrink-0;
+}
+
+/* Nickname (color set inline) */
+.irc-nick {
+  @apply font-bold;
+}
+
+/* Message content */
+.irc-content {
+  @apply text-text;
+  @apply break-words whitespace-pre-wrap;
+  @apply flex-1;
+  @apply min-w-0;
+}
+
+/* Status indicator */
+.irc-status {
+  @apply text-muted text-terminal-xs;
+  @apply flex-shrink-0;
+  @apply ml-1;
+}
+
+.irc-status-failed {
+  @apply text-error font-bold;
+}
+
+/* System messages (joins, leaves) */
+.irc-message-system {
+  @apply text-secondary;
+}
+
+.irc-system-arrow {
+  @apply font-bold flex-shrink-0;
+}
+
+.irc-system-join {
+  @apply text-success;
+}
+
+.irc-system-leave {
+  @apply text-error;
+}
+
+.irc-system-text {
+  @apply text-secondary;
+}
+
+.irc-system-nick {
+  @apply font-bold;
+}
+
+/* Action messages (/me) */
+.irc-message-action {
+  @apply text-secondary;
+}
+
+.irc-action-asterisk {
+  @apply text-secondary font-bold flex-shrink-0;
+}
+
+.irc-action-text {
+  @apply text-secondary italic;
+  @apply break-words whitespace-pre-wrap;
+  @apply flex-1;
+  @apply min-w-0;
+  @apply ml-1;
+}
+
+/* Typing indicator */
+.irc-message-typing {
+  @apply text-muted;
+}
+
+.irc-typing-text {
+  @apply text-muted italic ml-1;
+}
+
+/* Date separator */
+.irc-date-separator {
+  @apply flex items-center justify-center gap-2;
+  @apply py-3 my-2;
+  @apply text-terminal-xs text-muted;
+  @apply font-mono;
+}
+
+.irc-date-line {
+  @apply text-muted;
+}
+
+.irc-date-text {
+  @apply text-muted;
+}
+
+/* Legacy Message Bubble Component (kept for compatibility) */
+/* ========================================================================== */
 
 .message-bubble {
   @apply max-w-[85%] px-3 py-2;

@@ -187,7 +187,7 @@ export const NativeEncryptionFormat = {
     combined.set(nonce, 0);
     combined.set(ciphertext, nonce.length);
     combined.set(tag, nonce.length + ciphertext.length);
-    return 'v2:' + base64UrlEncode(combined);
+    return `v2:${  base64UrlEncode(combined)}`;
   },
 
   /**
@@ -285,9 +285,7 @@ export const NativeTimestampHandling = {
   /**
    * Current timestamp (for rumor - actual message time)
    */
-  currentTimestamp: (): number => {
-    return Math.floor(Date.now() / 1000);
-  },
+  currentTimestamp: (): number => Math.floor(Date.now() / 1000),
 } as const;
 
 // ============================================================================

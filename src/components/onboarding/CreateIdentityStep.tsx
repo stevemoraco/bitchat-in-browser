@@ -8,7 +8,7 @@
  * - Display generated fingerprint for verification
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback, useMemo } from 'preact/hooks';
 import { IdentityService, generateVisualFingerprint } from '../../services/identity';
 import { getStorageManager } from '../../services/storage';
@@ -62,7 +62,7 @@ function calculatePasswordStrength(password: string): PasswordStrength {
     4: { label: 'Strong', color: 'terminal-green' },
   };
 
-  const info = labels[score] ?? labels[0]!;
+  const info = labels[score] ?? labels[0];
   return { score, ...info };
 }
 

@@ -15,7 +15,7 @@
  * @module components/sharing/ReceiveApp
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useCallback } from 'preact/hooks';
 
 // ============================================================================
@@ -620,8 +620,7 @@ export const ReceiveApp: FunctionComponent<ReceiveAppProps> = ({
  */
 export const withReceiveAppDetection = <P extends object>(
   WrappedComponent: FunctionComponent<P>
-): FunctionComponent<P> => {
-  return (props: P) => {
+): FunctionComponent<P> => (props: P) => {
     const [showReceivePage, setShowReceivePage] = useState(false);
     const [hasChecked, setHasChecked] = useState(false);
 
@@ -658,6 +657,5 @@ export const withReceiveAppDetection = <P extends object>(
 
     return <WrappedComponent {...props} />;
   };
-};
 
 export default ReceiveApp;

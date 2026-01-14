@@ -8,7 +8,7 @@
  * - Conditional step rendering based on import vs create flow
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback, useMemo } from 'preact/hooks';
 import { WelcomeStep } from './WelcomeStep';
 import { CreateIdentityStep } from './CreateIdentityStep';
@@ -99,14 +99,10 @@ export const OnboardingFlow: FunctionComponent<OnboardingFlowProps> = ({
   }, [state.flow]);
 
   // Get current step index for progress indicator
-  const currentStepIndex = useMemo(() => {
-    return visibleSteps.findIndex((s) => s.id === state.currentStep);
-  }, [visibleSteps, state.currentStep]);
+  const currentStepIndex = useMemo(() => visibleSteps.findIndex((s) => s.id === state.currentStep), [visibleSteps, state.currentStep]);
 
   // Get steps to show in progress indicator
-  const progressSteps = useMemo(() => {
-    return visibleSteps.filter((s) => s.showInProgress);
-  }, [visibleSteps]);
+  const progressSteps = useMemo(() => visibleSteps.filter((s) => s.showInProgress), [visibleSteps]);
 
   // Navigation handlers
   const goToStep = useCallback((step: OnboardingStep) => {

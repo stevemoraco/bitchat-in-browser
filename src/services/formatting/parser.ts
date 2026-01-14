@@ -488,14 +488,12 @@ export function parseMessage(
   }
 
   // Helper to check if position is inside code
-  const isInsideCode = (pos: number): boolean => {
-    return matches.some(
+  const isInsideCode = (pos: number): boolean => matches.some(
       (m) =>
         (m.type === 'code_block' || m.type === 'inline_code') &&
         pos >= m.start &&
         pos < m.end
     );
-  };
 
   // Parse URLs
   if (opts.parseUrls) {
@@ -767,11 +765,11 @@ export function parseMessage(
 
   for (const token of tokens) {
     if (token.type === 'mention') {
-      mentionedPubkeys.push((token as MentionToken).pubkey);
+      mentionedPubkeys.push((token).pubkey);
     } else if (token.type === 'hashtag') {
-      hashtags.push((token as HashtagToken).tag);
+      hashtags.push((token).tag);
     } else if (token.type === 'url') {
-      urls.push((token as UrlToken).url);
+      urls.push((token).url);
     }
   }
 
@@ -997,11 +995,11 @@ export function tokensToPlainText(tokens: Token[]): string {
     .map((token) => {
       switch (token.type) {
         case 'emoji':
-          return (token as EmojiToken).emoji;
+          return (token).emoji;
         case 'code_block':
-          return (token as CodeBlockToken).code;
+          return (token).code;
         case 'inline_code':
-          return (token as InlineCodeToken).code;
+          return (token).code;
         case 'newline':
           return '\n';
         default:

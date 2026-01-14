@@ -12,7 +12,7 @@
  * @module App
  */
 
-import { FunctionComponent, Component, ComponentChildren } from 'preact';
+import { Component, type FunctionComponent, type ComponentChildren } from 'preact';
 import { useState, useEffect, useCallback, useMemo } from 'preact/hooks';
 import { Route } from 'preact-router';
 import {
@@ -157,7 +157,7 @@ const ChannelDetailRoute: FunctionComponent<ChannelDetailRouteProps> = ({ id }) 
     <AuthGuard redirectTo={ROUTES.ONBOARDING}>
       <ChatView
         channelId={decodeURIComponent(id)}
-        showBack={true}
+        showBack
         onBack={handleBack}
       />
     </AuthGuard>
@@ -230,7 +230,7 @@ const MessageDetailRoute: FunctionComponent<MessageDetailRouteProps> = ({ pubkey
     <AuthGuard redirectTo={ROUTES.ONBOARDING}>
       <ChatView
         channelId={`dm-${decodeURIComponent(pubkey)}`}
-        showBack={true}
+        showBack
         onBack={handleBack}
       />
     </AuthGuard>
@@ -373,7 +373,7 @@ const DownloadRoute: FunctionComponent<RouteComponentProps> = () => {
     goBack();
   }, []);
 
-  return <DownloadPage onBack={handleBack} showBackButton={true} />;
+  return <DownloadPage onBack={handleBack} showBackButton />;
 };
 
 /** P2P Share page view */
@@ -384,7 +384,7 @@ const ShareRoute: FunctionComponent<RouteComponentProps> = () => {
     <ReceiveApp
       onInstallComplete={toChannels}
       onSkip={toChannels}
-      fullPage={true}
+      fullPage
     />
   );
 };
@@ -505,8 +505,8 @@ const AppContent: FunctionComponent = () => {
       {showShell ? (
         <Shell
           showHeader={showHeader}
-          showNavigation={true}
-          showStatusBar={true}
+          showNavigation
+          showStatusBar
           syncProgress={syncProgress}
           relayCount={connection.relayCount}
           webrtcPeerCount={connection.webrtcPeerCount}

@@ -14,8 +14,7 @@
  * @see CLAUDE.md for compatibility requirements with native apps
  */
 
-import type { NostrEvent, NostrFilter, Subscription, EventHandler } from '../nostr/types';
-import { NostrEventKind } from '../nostr/types';
+import { NostrEventKind, type NostrEvent, type NostrFilter, type Subscription, type EventHandler } from '../nostr/types';
 import { nostrClient, createEvent, signEvent, getTagValue } from '../nostr';
 import {
   encode,

@@ -6,7 +6,8 @@
  */
 
 import { getSodium, ensureSodiumReady } from './init';
-import { KeyPair, CryptoConstants } from './types';
+import type { KeyPair} from './types';
+import { CryptoConstants } from './types';
 
 /**
  * Generate an X25519 key pair for Noise protocol and ECDH.

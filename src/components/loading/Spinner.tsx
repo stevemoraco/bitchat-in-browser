@@ -10,7 +10,7 @@
  * @module components/loading/Spinner
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 
 // ============================================================================
@@ -227,8 +227,7 @@ export const BlockSpinner: FunctionComponent<{
 export const PulseSpinner: FunctionComponent<{
   class?: string;
   character?: string;
-}> = ({ class: className = '', character = '*' }) => {
-  return (
+}> = ({ class: className = '', character = '*' }) => (
     <span
       class={`font-mono text-terminal-green animate-pulse ${className}`}
       role="status"
@@ -237,7 +236,6 @@ export const PulseSpinner: FunctionComponent<{
       {character}
     </span>
   );
-};
 
 /**
  * Terminal-style loading with prefix

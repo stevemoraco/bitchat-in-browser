@@ -7,9 +7,10 @@
  * @module services/errors/handler
  */
 
+import type {
+  ErrorCode} from './index';
 import {
   BitChatError,
-  ErrorCode,
   ErrorSeverity,
   ErrorCategory,
   type SerializedError,

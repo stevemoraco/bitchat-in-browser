@@ -10,7 +10,7 @@
  * @module components/settings/PrivacySettings
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useSettingsStore, useSettings } from '../../stores/settings-store';
 
 // ============================================================================
@@ -45,8 +45,7 @@ const Toggle: FunctionComponent<ToggleProps> = ({
   checked,
   onChange,
   danger = false,
-}) => {
-  return (
+}) => (
     <div
       class={`flex items-start justify-between gap-4 p-3 border ${
         danger ? 'border-terminal-red/30' : 'border-terminal-green/20'
@@ -98,7 +97,6 @@ const Toggle: FunctionComponent<ToggleProps> = ({
       </button>
     </div>
   );
-};
 
 const Slider: FunctionComponent<SliderProps> = ({
   label,
@@ -108,8 +106,7 @@ const Slider: FunctionComponent<SliderProps> = ({
   max,
   onChange,
   formatValue,
-}) => {
-  return (
+}) => (
     <div class="space-y-2 p-3 border border-terminal-green/20">
       <div class="flex items-center justify-between">
         <span class="font-bold text-terminal-green">{label}</span>
@@ -142,7 +139,6 @@ const Slider: FunctionComponent<SliderProps> = ({
       </div>
     </div>
   );
-};
 
 // ============================================================================
 // Constants
@@ -237,7 +233,7 @@ export const PrivacySettings: FunctionComponent = () => {
       <Toggle
         label="Typing Indicators"
         description="Show others when you're typing a message. Disable for more privacy, but others won't see your typing status either."
-        checked={true}
+        checked
         onChange={(_checked) => {
           // TODO: Implement typing indicators in settings store
           console.log('Typing indicators not yet implemented');

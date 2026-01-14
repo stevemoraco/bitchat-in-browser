@@ -10,7 +10,7 @@
  * @module components/updates/UpdateProgress
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import type { InstallStatus, InstallProgress } from '../../services/updates/installer';
 

@@ -10,11 +10,11 @@
  * @module components/notifications/NotificationPrompt
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback } from 'preact/hooks';
 import {
   getNotificationService,
-  NotificationCapabilities,
+  type NotificationCapabilities
 } from '../../services/notifications';
 
 // ============================================================================

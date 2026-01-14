@@ -241,9 +241,7 @@ export function useNavigation(): UseNavigationReturn {
   }, [doNavigate]);
 
   // Check if we can go back
-  const canGoBack = useMemo(() => {
-    return currentPath !== '/' && currentPath !== ROUTES.CHANNELS;
-  }, [currentPath]);
+  const canGoBack = useMemo(() => currentPath !== '/' && currentPath !== ROUTES.CHANNELS, [currentPath]);
 
   return {
     navigate: doNavigate,
@@ -277,9 +275,7 @@ export function useRouteParams<
   const { route } = useNavigation();
 
   const get = useCallback(
-    (key: keyof T): string | undefined => {
-      return route.params[key as string];
-    },
+    (key: keyof T): string | undefined => route.params[key as string],
     [route.params]
   );
 
@@ -329,9 +325,7 @@ export function useQueryParams(): UseQueryParamsReturn {
   }, []);
 
   const get = useCallback(
-    (key: string): string | undefined => {
-      return params[key];
-    },
+    (key: string): string | undefined => params[key],
     [params]
   );
 
@@ -440,20 +434,20 @@ export function useCurrentRoute(): CurrentRoute {
       name = 'onboarding';
     } else if (path === ROUTES.CHANNELS) {
       name = 'channels';
-    } else if (path.startsWith(ROUTES.CHANNELS + '/')) {
+    } else if (path.startsWith(`${ROUTES.CHANNELS  }/`)) {
       name = 'channel';
       isDetail = true;
     } else if (path === ROUTES.MESSAGES) {
       name = 'messages';
-    } else if (path.startsWith(ROUTES.MESSAGES + '/')) {
+    } else if (path.startsWith(`${ROUTES.MESSAGES  }/`)) {
       name = 'message';
       isDetail = true;
     } else if (path === ROUTES.PEERS) {
       name = 'peers';
-    } else if (path.startsWith(ROUTES.PEERS + '/')) {
+    } else if (path.startsWith(`${ROUTES.PEERS  }/`)) {
       name = 'peer';
       isDetail = true;
-    } else if (path === ROUTES.SETTINGS || path.startsWith(ROUTES.SETTINGS + '/')) {
+    } else if (path === ROUTES.SETTINGS || path.startsWith(`${ROUTES.SETTINGS  }/`)) {
       name = 'settings';
       isDetail = path !== ROUTES.SETTINGS;
     } else if (path === ROUTES.DOWNLOAD) {
@@ -588,7 +582,7 @@ export function useNavLink(
   options?: { replace?: boolean }
 ): NavLinkProps {
   const { route } = useNavigation();
-  const isActive = route.path === to || route.path.startsWith(to + '/');
+  const isActive = route.path === to || route.path.startsWith(`${to  }/`);
 
   const handleClick = useCallback(
     (e: Event) => {

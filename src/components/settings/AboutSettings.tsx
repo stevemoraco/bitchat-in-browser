@@ -10,7 +10,7 @@
  * @module components/settings/AboutSettings
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState } from 'preact/hooks';
 
 // ============================================================================

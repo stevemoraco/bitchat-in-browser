@@ -164,7 +164,7 @@ export class OPFSStorage implements StorageAdapter {
    */
   private encodeKey(key: string): string {
     // URL encode special characters and add .json extension
-    return encodeURIComponent(key) + '.json';
+    return `${encodeURIComponent(key)  }.json`;
   }
 
   /**

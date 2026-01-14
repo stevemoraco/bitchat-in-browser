@@ -342,7 +342,7 @@ export class IdentityService {
 
     // Derive seed using Argon2id
     // Salt is "mnemonic" + passphrase (truncated to 16 bytes for pwhash)
-    const saltString = 'mnemonic' + passphrase;
+    const saltString = `mnemonic${  passphrase}`;
     const salt = sodium.from_string(saltString).slice(0, 16);
 
     // Use crypto_pwhash for seed derivation

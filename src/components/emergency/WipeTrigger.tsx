@@ -12,7 +12,7 @@
  * @module components/emergency/WipeTrigger
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
 import { createTapDetector, type TriggerEvent } from '../../features/emergency/trigger';
 
@@ -100,13 +100,11 @@ export const WipeTrigger: FunctionComponent<WipeTriggerProps> = ({
   );
 
   // Cleanup
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       if (resetTimeoutRef.current) {
         clearTimeout(resetTimeoutRef.current);
       }
-    };
-  }, []);
+    }, []);
 
   // Calculate feedback indicator style
   const feedbackStyle = showFeedback
@@ -171,8 +169,7 @@ export const LogoWipeTrigger: FunctionComponent<LogoWipeTriggerProps> = ({
   onTrigger,
   enabled = true,
   className = '',
-}) => {
-  return (
+}) => (
     <WipeTrigger
       onTrigger={onTrigger}
       enabled={enabled}
@@ -184,6 +181,5 @@ export const LogoWipeTrigger: FunctionComponent<LogoWipeTriggerProps> = ({
       <span class="text-xl font-bold text-terminal-green">BitChat</span>
     </WipeTrigger>
   );
-};
 
 export default WipeTrigger;

@@ -61,7 +61,7 @@ class HashHistory {
     const hash = window.location.hash;
     // Remove # prefix and ensure leading /
     const path = hash.startsWith('#') ? hash.slice(1) : hash;
-    return path.startsWith('/') ? path : '/' + path;
+    return path.startsWith('/') ? path : `/${  path}`;
   }
 
   /**
@@ -211,7 +211,7 @@ class HashHistory {
    */
   private normalizePath(path: string): string {
     // Ensure leading slash
-    let normalized = path.startsWith('/') ? path : '/' + path;
+    let normalized = path.startsWith('/') ? path : `/${  path}`;
     // Remove trailing slash (except for root)
     if (normalized.length > 1 && normalized.endsWith('/')) {
       normalized = normalized.slice(0, -1);
@@ -302,7 +302,7 @@ export function parseDeepLink(uri: string): DeepLinkResult {
     if (uri.startsWith('web+nostr:') || uri.startsWith('nostr:')) {
       const nostrUri = uri.replace(/^web\+/, '');
       result.type = 'nostr';
-      result.params['nostr'] = nostrUri;
+      result.params.nostr = nostrUri;
 
       // Parse Nostr URI components
       const nostrPart = nostrUri.replace('nostr:', '');
@@ -311,16 +311,16 @@ export function parseDeepLink(uri: string): DeepLinkResult {
         // Public key - navigate to peer profile
         result.type = 'peer';
         result.path = `/peers/${nostrPart}`;
-        result.params['npub'] = nostrPart;
+        result.params.npub = nostrPart;
       } else if (nostrPart.startsWith('note')) {
         // Note ID - try to find the channel
         result.type = 'channel';
-        result.params['note'] = nostrPart;
+        result.params.note = nostrPart;
         result.path = '/channels';
       } else if (nostrPart.startsWith('nevent')) {
         // Event - parse and navigate
         result.type = 'channel';
-        result.params['nevent'] = nostrPart;
+        result.params.nevent = nostrPart;
         result.path = '/channels';
       }
 
@@ -351,7 +351,7 @@ export function parseDeepLink(uri: string): DeepLinkResult {
           break;
         case 'nearby':
           result.path = '/channels';
-          result.params['filter'] = 'nearby';
+          result.params.filter = 'nearby';
           break;
         case 'share':
           result.path = '/share';
@@ -376,7 +376,7 @@ export function parseDeepLink(uri: string): DeepLinkResult {
 
     // Default to parsing hash for internal navigation
     const hashPath = url.hash.replace('#', '') || '/';
-    result.path = hashPath.startsWith('/') ? hashPath : '/' + hashPath;
+    result.path = hashPath.startsWith('/') ? hashPath : `/${  hashPath}`;
   } catch (error) {
     console.error('[History] Failed to parse deep link:', uri, error);
   }

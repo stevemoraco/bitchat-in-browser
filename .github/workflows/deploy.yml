@@ -10,10 +10,24 @@ on:
         required: false
         default: 'false'
         type: boolean
+      update_ens:
+        description: 'Auto-update ENS content hash'
+        required: false
+        default: 'false'
+        type: boolean
+      dry_run:
+        description: 'Dry run (build and verify only)'
+        required: false
+        default: 'false'
+        type: boolean
 
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: false
+
+env:
+  NODE_VERSION: '20'
+  ENS_NAME: 'bitbrowse.eth'
 
 jobs:
   # Run tests first (unless skipped via manual trigger)
@@ -28,7 +42,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -43,6 +57,10 @@ jobs:
       - name: Run unit tests
         run: npm run test
 
+      - name: Run security tests
+        run: npm run test:security || true
+        continue-on-error: true
+
   build:
     name: Build Production Bundle
     runs-on: ubuntu-latest
@@ -50,6 +68,7 @@ jobs:
     if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped')
     outputs:
       build_hash: ${{ steps.build_info.outputs.hash }}
+      bundle_size: ${{ steps.build_info.outputs.size }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,7 +76,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -68,12 +87,33 @@ jobs:
         env:
           NODE_ENV: production
 
-      - name: Generate build hash
+      - name: Verify build integrity
+        run: |
+          if [ ! -f dist/index.html ]; then
+            echo "::error::Build failed - index.html not found"
+            exit 1
+          fi
+
+          # Check for required PWA files
+          if [ ! -f dist/manifest.webmanifest ]; then
+            echo "::warning::manifest.webmanifest not found"
+          fi
+
+          # Check for service worker
+          if [ ! -f dist/sw.js ]; then
+            echo "::warning::Service worker not found"
+          fi
+
+      - name: Generate build info
         id: build_info
         run: |
           BUILD_HASH=$(find dist -type f -exec sha256sum {} \; | sort | sha256sum | cut -d' ' -f1)
           echo "hash=${BUILD_HASH:0:16}" >> $GITHUB_OUTPUT
           echo "Build hash: ${BUILD_HASH:0:16}"
+
+          BUNDLE_SIZE=$(du -sh dist/ | cut -f1)
+          echo "size=${BUNDLE_SIZE}" >> $GITHUB_OUTPUT
+          echo "Bundle size: ${BUNDLE_SIZE}"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -86,6 +126,7 @@ jobs:
     name: Deploy to IPFS
     runs-on: ubuntu-latest
     needs: [build]
+    if: github.event.inputs.dry_run != 'true'
     outputs:
       ipfs_cid: ${{ steps.deploy.outputs.cid }}
       pinata_cid: ${{ steps.pinata.outputs.cid }}
@@ -97,7 +138,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -117,10 +158,19 @@ jobs:
           if [ -z "$PINATA_JWT" ]; then
             echo "::warning::PINATA_JWT not set, skipping Pinata upload"
             echo "cid=" >> $GITHUB_OUTPUT
-          else
-            CID=$(npx tsx scripts/deploy-ipfs.ts --pinata)
+            exit 0
+          fi
+
+          echo "Uploading to Pinata..."
+          CID=$(npx tsx scripts/deploy-ipfs.ts --pinata 2>&1 | tail -1)
+
+          if [[ "$CID" =~ ^(Qm|bafy) ]]; then
             echo "cid=${CID}" >> $GITHUB_OUTPUT
             echo "Pinata CID: ${CID}"
+          else
+            echo "::error::Pinata upload failed"
+            echo "Output: $CID"
+            exit 1
           fi
 
       - name: Deploy to web3.storage (backup)
@@ -131,10 +181,18 @@ jobs:
           if [ -z "$WEB3_STORAGE_TOKEN" ]; then
             echo "::warning::WEB3_STORAGE_TOKEN not set, skipping web3.storage upload"
             echo "cid=" >> $GITHUB_OUTPUT
-          else
-            CID=$(npx tsx scripts/deploy-ipfs.ts --web3storage)
+            exit 0
+          fi
+
+          echo "Uploading to web3.storage..."
+          CID=$(npx tsx scripts/deploy-ipfs.ts --web3storage 2>&1 | tail -1)
+
+          if [[ "$CID" =~ ^(Qm|bafy) ]]; then
             echo "cid=${CID}" >> $GITHUB_OUTPUT
             echo "web3.storage CID: ${CID}"
+          else
+            echo "::warning::web3.storage upload may have failed"
+            echo "cid=" >> $GITHUB_OUTPUT
           fi
 
       - name: Set primary CID
@@ -155,6 +213,20 @@ jobs:
             exit 1
           fi
 
+      - name: Verify CID consistency
+        if: steps.pinata.outputs.cid != '' && steps.web3storage.outputs.cid != ''
+        run: |
+          PINATA_CID="${{ steps.pinata.outputs.cid }}"
+          WEB3_CID="${{ steps.web3storage.outputs.cid }}"
+
+          if [ "$PINATA_CID" != "$WEB3_CID" ]; then
+            echo "::warning::CIDs from different providers do not match"
+            echo "Pinata: ${PINATA_CID}"
+            echo "web3.storage: ${WEB3_CID}"
+          else
+            echo "CIDs match across providers: ${PINATA_CID}"
+          fi
+
   verify:
     name: Verify Deployment
     runs-on: ubuntu-latest
@@ -163,7 +235,7 @@ jobs:
       - name: Wait for IPFS propagation
         run: sleep 30
 
-      - name: Verify via dweb.link gateway
+      - name: Verify via multiple gateways
         run: |
           CID="${{ needs.deploy-ipfs.outputs.ipfs_cid }}"
           if [ -z "$CID" ]; then
@@ -173,25 +245,97 @@ jobs:
 
           echo "Verifying CID: ${CID}"
 
-          # Try multiple gateways
           GATEWAYS=(
             "https://${CID}.ipfs.dweb.link"
             "https://${CID}.ipfs.cf-ipfs.com"
             "https://gateway.pinata.cloud/ipfs/${CID}"
+            "https://ipfs.io/ipfs/${CID}"
+            "https://cloudflare-ipfs.com/ipfs/${CID}"
           )
 
-          SUCCESS=false
+          SUCCESS_COUNT=0
           for GATEWAY in "${GATEWAYS[@]}"; do
-            echo "Trying: ${GATEWAY}"
+            echo "Checking: ${GATEWAY}"
             if curl -sf -o /dev/null --connect-timeout 30 --max-time 60 "${GATEWAY}"; then
-              echo "Gateway accessible: ${GATEWAY}"
-              SUCCESS=true
-              break
+              echo "  ✓ Gateway accessible"
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            else
+              echo "  ✗ Gateway not responding"
             fi
           done
 
-          if [ "$SUCCESS" = false ]; then
-            echo "::warning::Could not verify via any gateway (content may still be propagating)"
+          echo ""
+          echo "Accessible gateways: ${SUCCESS_COUNT}/${#GATEWAYS[@]}"
+
+          if [ $SUCCESS_COUNT -eq 0 ]; then
+            echo "::warning::Content not yet accessible via any gateway (may still be propagating)"
+          fi
+
+      - name: Check index.html content
+        run: |
+          CID="${{ needs.deploy-ipfs.outputs.ipfs_cid }}"
+          if [ -z "$CID" ]; then
+            exit 0
+          fi
+
+          # Try to fetch and verify index.html
+          GATEWAY="https://gateway.pinata.cloud/ipfs/${CID}"
+          echo "Fetching index.html from ${GATEWAY}..."
+
+          if curl -sf --max-time 60 "${GATEWAY}" | grep -q "BitChat"; then
+            echo "✓ Content verified - BitChat found in index.html"
+          else
+            echo "::warning::Could not verify BitChat content in index.html"
+          fi
+
+  update-ens:
+    name: Update ENS Content Hash
+    runs-on: ubuntu-latest
+    needs: [deploy-ipfs, verify]
+    if: |
+      github.event.inputs.update_ens == 'true' &&
+      needs.deploy-ipfs.outputs.ipfs_cid != ''
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci && npm install ethers@^6.0.0
+
+      - name: Update ENS content hash
+        env:
+          ENS_PRIVATE_KEY: ${{ secrets.ENS_PRIVATE_KEY }}
+          RPC_URL: ${{ secrets.ETH_RPC_URL }}
+        run: |
+          CID="${{ needs.deploy-ipfs.outputs.ipfs_cid }}"
+
+          if [ -z "$ENS_PRIVATE_KEY" ]; then
+            echo "::error::ENS_PRIVATE_KEY secret not set"
+            echo "To enable automatic ENS updates, add the ENS_PRIVATE_KEY secret"
+            exit 1
+          fi
+
+          echo "Updating ENS content hash for ${{ env.ENS_NAME }}..."
+          echo "New CID: ${CID}"
+
+          npx tsx scripts/update-ens.ts "${CID}" --update
+
+      - name: Verify ENS resolution
+        run: |
+          echo "Waiting for ENS update to propagate..."
+          sleep 60
+
+          echo "Verifying https://${{ env.ENS_NAME }}.limo..."
+          if curl -sf -o /dev/null --max-time 120 "https://bitbrowse.eth.limo"; then
+            echo "✓ ENS resolution verified"
+          else
+            echo "::warning::ENS may still be propagating"
           fi
 
   summary:
@@ -206,21 +350,26 @@ jobs:
           PINATA_CID="${{ needs.deploy-ipfs.outputs.pinata_cid }}"
           WEB3_CID="${{ needs.deploy-ipfs.outputs.web3storage_cid }}"
           BUILD_HASH="${{ needs.build.outputs.build_hash }}"
+          BUNDLE_SIZE="${{ needs.build.outputs.bundle_size }}"
 
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> $GITHUB_STEP_SUMMARY << EOF
           # BitChat In Browser - Deployment Summary
 
           ## Build Information
-          - **Commit:** ${{ github.sha }}
-          - **Branch:** ${{ github.ref_name }}
-          - **Build Hash:** ${BUILD_HASH:-N/A}
-          - **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          | Property | Value |
+          |----------|-------|
+          | Commit | \`${{ github.sha }}\` |
+          | Branch | \`${{ github.ref_name }}\` |
+          | Build Hash | \`${BUILD_HASH:-N/A}\` |
+          | Bundle Size | ${BUNDLE_SIZE:-N/A} |
+          | Timestamp | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |
 
-          ## IPFS Deployment
           EOF
 
           if [ -n "$CID" ]; then
             cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          ## IPFS Deployment
 
           **Primary CID:** \`${CID}\`
 
@@ -228,6 +377,8 @@ jobs:
           - [dweb.link](https://${CID}.ipfs.dweb.link)
           - [cf-ipfs.com](https://${CID}.ipfs.cf-ipfs.com)
           - [Pinata Gateway](https://gateway.pinata.cloud/ipfs/${CID})
+          - [ipfs.io](https://ipfs.io/ipfs/${CID})
+          - [Cloudflare](https://cloudflare-ipfs.com/ipfs/${CID})
 
           ### Upload Status
           EOF
@@ -244,29 +395,56 @@ jobs:
               echo "- web3.storage: Skipped (no credentials)" >> $GITHUB_STEP_SUMMARY
             fi
 
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+            cat >> $GITHUB_STEP_SUMMARY << EOF
 
           ## ENS Update Instructions
 
-          To update the ENS content hash for `bitbrowse.eth`:
+          To update the ENS content hash for \`${{ env.ENS_NAME }}\`:
 
+          ### Option 1: ENS Manager App (Recommended)
           1. Go to [app.ens.domains](https://app.ens.domains)
-          2. Connect wallet that owns `bitbrowse.eth`
-          3. Go to **bitbrowse.eth** -> **Records**
+          2. Connect wallet that owns \`${{ env.ENS_NAME }}\`
+          3. Go to **${{ env.ENS_NAME }}** -> **Records**
           4. Edit **Content Hash**
-          5. Set to: `ipfs://${CID}`
+          5. Set to: \`ipfs://${CID}\`
           6. Confirm transaction
-          7. Verify at [bitbrowse.eth.limo](https://bitbrowse.eth.limo)
+          7. Verify at [${{ env.ENS_NAME }}.limo](https://bitbrowse.eth.limo)
+
+          ### Option 2: Automatic Update
+          Run this workflow with \`update_ens: true\` after configuring:
+          - \`ENS_PRIVATE_KEY\` - Private key of wallet owning the ENS name
+          - \`ETH_RPC_URL\` - Ethereum mainnet RPC URL (optional)
 
           EOF
           else
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+            cat >> $GITHUB_STEP_SUMMARY << EOF
 
-          **Deployment failed or skipped**
+          ## Deployment Status
+
+          **Deployment failed or was skipped**
 
           Please check the workflow logs and ensure the following secrets are configured:
-          - `PINATA_JWT`
-          - `WEB3_STORAGE_TOKEN`
+          - \`PINATA_JWT\` - JWT token for Pinata API
+          - \`WEB3_STORAGE_TOKEN\` - Token for web3.storage API
 
           EOF
+          fi
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+
+          ---
+          *Generated by BitChat deployment workflow*
+          EOF
+
+      - name: Post to Slack (optional)
+        if: env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          CID="${{ needs.deploy-ipfs.outputs.ipfs_cid }}"
+
+          if [ -n "$CID" ] && [ -n "$SLACK_WEBHOOK_URL" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data "{\"text\":\"BitChat deployed to IPFS\nCID: \`${CID}\`\nGateway: https://${CID}.ipfs.dweb.link\"}" \
+              "$SLACK_WEBHOOK_URL" || true
           fi

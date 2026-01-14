@@ -7,8 +7,9 @@
  * @module services/sync/integration
  */
 
+import type {
+  OfflineQueue} from './offline-queue';
 import {
-  OfflineQueue,
   ActionType,
   getOfflineQueue,
   type ActionResult,
@@ -310,41 +311,31 @@ export class SyncIntegration {
     // SEND_MESSAGE handler
     this.queue.registerHandler<SendMessagePayload>(
       ActionType.SEND_MESSAGE,
-      async (action) => {
-        return this.handleSendMessage(action);
-      }
+      async (action) => this.handleSendMessage(action)
     );
 
     // PUBLISH_EVENT handler
     this.queue.registerHandler<PublishEventPayload>(
       ActionType.PUBLISH_EVENT,
-      async (action) => {
-        return this.handlePublishEvent(action);
-      }
+      async (action) => this.handlePublishEvent(action)
     );
 
     // SUBSCRIBE_CHANNEL handler
     this.queue.registerHandler<SubscribeChannelPayload>(
       ActionType.SUBSCRIBE_CHANNEL,
-      async (action) => {
-        return this.handleSubscribeChannel(action);
-      }
+      async (action) => this.handleSubscribeChannel(action)
     );
 
     // UPDATE_PROFILE handler
     this.queue.registerHandler<UpdateProfilePayload>(
       ActionType.UPDATE_PROFILE,
-      async (action) => {
-        return this.handleUpdateProfile(action);
-      }
+      async (action) => this.handleUpdateProfile(action)
     );
 
     // SYNC_MESSAGES handler
     this.queue.registerHandler<SyncMessagesPayload>(
       ActionType.SYNC_MESSAGES,
-      async (action) => {
-        return this.handleSyncMessages(action);
-      }
+      async (action) => this.handleSyncMessages(action)
     );
   }
 
@@ -381,7 +372,7 @@ export class SyncIntegration {
           success: true,
           data: { eventId: nostrEvent.id },
         };
-      } else {
+      } 
         // Check if any relay accepted it
         const acceptedRelays = Array.from(result.relayResults.entries())
           .filter(([_, r]) => r.success)
@@ -401,7 +392,7 @@ export class SyncIntegration {
           success: false,
           error: 'No relays accepted the message',
         };
-      }
+      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {

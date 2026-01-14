@@ -8,7 +8,7 @@
  * - Create button
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useCallback } from 'preact/hooks';
 import { useChannelsStore, createChannel } from '../../stores/channels-store';
 

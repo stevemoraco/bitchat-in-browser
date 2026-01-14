@@ -11,7 +11,7 @@
  * @module components/loading/Progress
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 
 // ============================================================================
@@ -342,7 +342,7 @@ export const TerminalProgress: FunctionComponent<{
         indeterminate={indeterminate}
         variant="ascii"
         size="sm"
-        showBrackets={true}
+        showBrackets
         showPercentage={!indeterminate}
       />
     </div>
@@ -355,8 +355,7 @@ export const TerminalProgress: FunctionComponent<{
 export const StepProgress: FunctionComponent<{
   steps: Array<{ label: string; status: 'pending' | 'active' | 'completed' | 'error' }>;
   class?: string;
-}> = ({ steps, class: className = '' }) => {
-  return (
+}> = ({ steps, class: className = '' }) => (
     <div class={`font-mono text-sm space-y-1 ${className}`}>
       {steps.map((step, index) => {
         const statusSymbol = {
@@ -395,7 +394,6 @@ export const StepProgress: FunctionComponent<{
       })}
     </div>
   );
-};
 
 /**
  * Circular progress (text-based)
@@ -464,7 +462,7 @@ export const TransferProgress: FunctionComponent<{
           {formatBytes(transferred)} / {formatBytes(total)}
         </span>
       </div>
-      <ProgressBar value={percentage} variant="blocks" size="sm" showBrackets={true} />
+      <ProgressBar value={percentage} variant="blocks" size="sm" showBrackets />
       {speed !== undefined && (
         <div class="text-xs text-terminal-green/40 mt-1 text-right">
           {formatSpeed(speed)}

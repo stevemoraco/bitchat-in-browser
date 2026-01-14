@@ -157,10 +157,10 @@ export function createTapDetector(
         });
         reset();
         return;
-      } else {
+      } 
         // Remove old taps that are outside the window
         taps = taps.filter((tap) => now - tap.time < tapTimeout);
-      }
+      
     }
 
     // Set timeout to reset if no more taps
@@ -275,9 +275,7 @@ export function createShakeDetector(
     }
   };
 
-  const isSupported = (): boolean => {
-    return typeof DeviceMotionEvent !== 'undefined';
-  };
+  const isSupported = (): boolean => typeof DeviceMotionEvent !== 'undefined';
 
   const start = async (): Promise<boolean> => {
     if (!isSupported()) {
@@ -373,9 +371,7 @@ export function createDelayedTrigger(
     return Math.max(0, delay - elapsed);
   };
 
-  const isActive = (): boolean => {
-    return timeoutId !== null;
-  };
+  const isActive = (): boolean => timeoutId !== null;
 
   return { start, cancel, getTimeRemaining, isActive };
 }
@@ -434,9 +430,7 @@ export function createTriggerManager(
     shakeDetector?.stop();
   };
 
-  const getTapHandler = () => {
-    return tapDetector?.handleTap ?? null;
-  };
+  const getTapHandler = () => tapDetector?.handleTap ?? null;
 
   return { start, stop, getTapHandler };
 }

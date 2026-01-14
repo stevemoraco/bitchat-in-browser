@@ -8,7 +8,7 @@
  * - Add peer button
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useMemo, useCallback } from 'preact/hooks';
 import {
   usePeers,
@@ -94,8 +94,7 @@ const SearchInput: FunctionComponent<SearchInputProps> = ({
   value,
   onChange,
   placeholder = 'Search peers...',
-}) => {
-  return (
+}) => (
     <div class="terminal-input-wrapper">
       <span class="terminal-input-prefix">&gt;</span>
       <input
@@ -117,7 +116,6 @@ const SearchInput: FunctionComponent<SearchInputProps> = ({
       )}
     </div>
   );
-};
 
 // ============================================================================
 // Empty State Component

@@ -10,17 +10,17 @@
  * - Code blocks and inline code
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useMemo, useCallback } from 'preact/hooks';
 import {
   parseMessage,
-  ParseResult,
-  UrlToken,
+  type ParseResult,
+  type UrlToken
 } from '../../services/formatting/parser';
 import {
   renderTokens,
-  RenderContext,
-  RenderClassNames,
+  type RenderContext,
+  type RenderClassNames
 } from '../../services/formatting/renderer';
 import { usePeersStore } from '../../stores/peers-store';
 import { LinkPreview } from './LinkPreview';
@@ -116,8 +116,7 @@ export const FormattedMessage: FunctionComponent<FormattedMessageProps> = ({
   );
 
   // Parse content
-  const parseResult: ParseResult = useMemo(() => {
-    return parseMessage(content, {
+  const parseResult: ParseResult = useMemo(() => parseMessage(content, {
       parseUrls: !disableUrls,
       parseMentions: !disableMentions,
       parseHashtags: !disableHashtags,
@@ -125,8 +124,7 @@ export const FormattedMessage: FunctionComponent<FormattedMessageProps> = ({
       parseEmojis: !disableEmojis,
       parseCode: !disableCode,
       preserveNewlines: true,
-    });
-  }, [
+    }), [
     content,
     disableUrls,
     disableMentions,
@@ -171,9 +169,7 @@ export const FormattedMessage: FunctionComponent<FormattedMessageProps> = ({
   );
 
   // Render tokens
-  const renderedContent = useMemo(() => {
-    return renderTokens(parseResult.tokens, renderContext);
-  }, [parseResult.tokens, renderContext]);
+  const renderedContent = useMemo(() => renderTokens(parseResult.tokens, renderContext), [parseResult.tokens, renderContext]);
 
   // Extract URLs for previews
   const urlsForPreviews = useMemo(() => {
@@ -236,8 +232,7 @@ export const SimpleFormattedMessage: FunctionComponent<{
   content: string;
   className?: string;
 }> = ({ content, className = '' }) => {
-  const parseResult = useMemo(() => {
-    return parseMessage(content, {
+  const parseResult = useMemo(() => parseMessage(content, {
       parseUrls: true,
       parseMentions: true,
       parseHashtags: true,
@@ -245,12 +240,9 @@ export const SimpleFormattedMessage: FunctionComponent<{
       parseEmojis: true,
       parseCode: true,
       preserveNewlines: true,
-    });
-  }, [content]);
+    }), [content]);
 
-  const renderedContent = useMemo(() => {
-    return renderTokens(parseResult.tokens, {});
-  }, [parseResult.tokens]);
+  const renderedContent = useMemo(() => renderTokens(parseResult.tokens, {}), [parseResult.tokens]);
 
   return (
     <div class={`formatted-message break-words ${className}`}>
@@ -266,8 +258,7 @@ export const CodeFormattedMessage: FunctionComponent<{
   content: string;
   className?: string;
 }> = ({ content, className = '' }) => {
-  const parseResult = useMemo(() => {
-    return parseMessage(content, {
+  const parseResult = useMemo(() => parseMessage(content, {
       parseUrls: false,
       parseMentions: false,
       parseHashtags: false,
@@ -275,12 +266,9 @@ export const CodeFormattedMessage: FunctionComponent<{
       parseEmojis: false,
       parseCode: true,
       preserveNewlines: true,
-    });
-  }, [content]);
+    }), [content]);
 
-  const renderedContent = useMemo(() => {
-    return renderTokens(parseResult.tokens, {});
-  }, [parseResult.tokens]);
+  const renderedContent = useMemo(() => renderTokens(parseResult.tokens, {}), [parseResult.tokens]);
 
   return (
     <div class={`code-formatted-message font-mono ${className}`}>
@@ -297,8 +285,7 @@ export const CodeFormattedMessage: FunctionComponent<{
  * Hook to get parse result for message content
  */
 export function useFormattedMessage(content: string): ParseResult {
-  return useMemo(() => {
-    return parseMessage(content, {
+  return useMemo(() => parseMessage(content, {
       parseUrls: true,
       parseMentions: true,
       parseHashtags: true,
@@ -306,8 +293,7 @@ export function useFormattedMessage(content: string): ParseResult {
       parseEmojis: true,
       parseCode: true,
       preserveNewlines: true,
-    });
-  }, [content]);
+    }), [content]);
 }
 
 /**

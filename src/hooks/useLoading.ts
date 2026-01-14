@@ -105,12 +105,10 @@ export function useLoading(options: UseLoadingOptions = {}): UseLoadingReturn {
   const loadingStartRef = useRef<number | null>(null);
 
   // Cleanup on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (minDisplayRef.current) clearTimeout(minDisplayRef.current);
-    };
-  }, []);
+    }, []);
 
   /**
    * Start loading state
@@ -308,16 +306,12 @@ export function useMultiLoading(options: UseLoadingOptions = {}): UseMultiLoadin
   const startTimesRef = useRef<Map<string, number>>(new Map());
 
   // Cleanup on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       timeoutsRef.current.forEach((t) => clearTimeout(t));
       minDisplayRef.current.forEach((t) => clearTimeout(t));
-    };
-  }, []);
+    }, []);
 
-  const isLoading = useCallback((key: string): boolean => {
-    return states[key]?.isLoading ?? false;
-  }, [states]);
+  const isLoading = useCallback((key: string): boolean => states[key]?.isLoading ?? false, [states]);
 
   const startLoading = useCallback((key: string, message?: string) => {
     const now = Date.now();
@@ -573,11 +567,9 @@ export function useDelayedLoading(options: UseDelayedLoadingOptions = {}) {
     loading.stopLoading();
   }, [loading]);
 
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       if (delayRef.current) clearTimeout(delayRef.current);
-    };
-  }, []);
+    }, []);
 
   return {
     ...loading,

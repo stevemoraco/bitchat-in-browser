@@ -10,7 +10,7 @@
  * @module components/settings/DangerZone
  */
 
-import { FunctionComponent, VNode } from 'preact';
+import type { FunctionComponent, VNode } from 'preact';
 import { useState, useCallback } from 'preact/hooks';
 import { useIdentityStore } from '../../stores/identity-store';
 

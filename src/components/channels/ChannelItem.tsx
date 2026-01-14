@@ -9,7 +9,7 @@
  * - Unread count badge
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import type { Channel } from '../../stores/types';
 
 // ============================================================================
@@ -134,10 +134,10 @@ function formatTimestamp(timestamp: number): string {
     return `${hours}h`;
   } else if (days < 7) {
     return `${days}d`;
-  } else {
+  } 
     const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
+  
 }
 
 /**
@@ -145,7 +145,7 @@ function formatTimestamp(timestamp: number): string {
  */
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength - 3) + '...';
+  return `${text.slice(0, maxLength - 3)  }...`;
 }
 
 /**

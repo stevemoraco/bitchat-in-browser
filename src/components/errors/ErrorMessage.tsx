@@ -9,7 +9,7 @@
  * @module components/errors/ErrorMessage
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
 import {
   ErrorSeverity,

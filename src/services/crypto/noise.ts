@@ -30,18 +30,19 @@
  */
 
 import { getSodium, ensureSodiumReady } from './init';
+import type {
+  NoiseKeyPair,
+  NoiseCipherState,
+  TransportCiphers} from './noise-state';
 import {
   NoiseConstants,
   NoisePattern,
   NoiseRole,
   NoiseSessionState,
   NoiseToken,
-  NoiseKeyPair,
   NoiseError,
   NoiseErrorCode,
-  NoiseCipherState,
   NoiseSymmetricState,
-  TransportCiphers,
   getMessagePatterns,
   getProtocolName,
   validatePublicKey,
@@ -186,7 +187,7 @@ export class NoiseHandshakeState {
     }
 
     const messageBuffer: number[] = [];
-    const patterns = this.messagePatterns[this.currentPattern]!;
+    const patterns = this.messagePatterns[this.currentPattern];
 
     for (const token of patterns) {
       switch (token) {
@@ -335,7 +336,7 @@ export class NoiseHandshakeState {
     }
 
     let buffer = message;
-    const patterns = this.messagePatterns[this.currentPattern]!;
+    const patterns = this.messagePatterns[this.currentPattern];
 
     for (const token of patterns) {
       switch (token) {
@@ -581,10 +582,10 @@ export class NoiseSession {
     // Only initiator writes the first message
     if (this.role === NoiseRole.Initiator) {
       return this.handshakeState.writeMessage();
-    } else {
+    } 
       // Responder doesn't send first message in XX pattern
       return new Uint8Array(0);
-    }
+    
   }
 
   /**

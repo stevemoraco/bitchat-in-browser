@@ -15,7 +15,7 @@
  * @module components/a11y/Announcer
  */
 
-import { FunctionComponent, createContext } from 'preact';
+import { createContext, type FunctionComponent } from 'preact';
 import { useState, useEffect, useCallback, useContext, useRef } from 'preact/hooks';
 
 // ============================================================================
@@ -167,13 +167,11 @@ export const AnnouncerProvider: FunctionComponent<AnnouncerProviderProps> = ({
   }, []);
 
   // Cleanup on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
-    };
-  }, []);
+    }, []);
 
   const contextValue: AnnouncerContextValue = {
     announce,
@@ -211,8 +209,7 @@ interface LiveRegionProps {
 const LiveRegion: FunctionComponent<LiveRegionProps> = ({
   message,
   priority,
-}) => {
-  return (
+}) => (
     <div
       role="status"
       aria-live={priority}
@@ -222,7 +219,6 @@ const LiveRegion: FunctionComponent<LiveRegionProps> = ({
       {message}
     </div>
   );
-};
 
 // ============================================================================
 // Hook for using announcer
@@ -279,8 +275,7 @@ interface StandaloneAnnouncerProps {
  */
 export const StandaloneAnnouncer: FunctionComponent<StandaloneAnnouncerProps> = ({
   id = 'announcer',
-}) => {
-  return (
+}) => (
     <div
       id={id}
       role="status"
@@ -289,7 +284,6 @@ export const StandaloneAnnouncer: FunctionComponent<StandaloneAnnouncerProps> = 
       class="sr-only"
     />
   );
-};
 
 // ============================================================================
 // Utility functions for common announcements

@@ -8,7 +8,7 @@
  * - Execute on Enter
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'preact/hooks';
 import {
   getCommandSuggestions,
@@ -120,9 +120,9 @@ export const CommandInput: FunctionComponent<CommandInputProps> = ({
     if (index === -1) return name;
 
     return (
-      name.slice(0, index) +
-      `<mark>${name.slice(index, index + partial.length)}</mark>` +
-      name.slice(index + partial.length)
+      `${name.slice(0, index) 
+      }<mark>${name.slice(index, index + partial.length)}</mark>${ 
+      name.slice(index + partial.length)}`
     );
   }, []);
 
@@ -246,9 +246,7 @@ export const CommandInput: FunctionComponent<CommandInputProps> = ({
 
       try {
         const result = await executeCommand(trimmedValue, {
-          onConfirm: async (message) => {
-            return window.confirm(message);
-          },
+          onConfirm: async (message) => window.confirm(message),
         });
 
         const outputLines = formatTerminalOutput(result);

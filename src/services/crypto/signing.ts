@@ -6,7 +6,8 @@
  */
 
 import { getSodium, ensureSodiumReady } from './init';
-import { Signature, CryptoConstants } from './types';
+import type { Signature} from './types';
+import { CryptoConstants } from './types';
 
 /**
  * Sign a message using Ed25519.

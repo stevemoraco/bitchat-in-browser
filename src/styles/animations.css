@@ -1,0 +1,631 @@
+/* BitChat In Browser - Animation System */
+/* Wave 7.4: Smooth animations and transitions */
+
+/* ==========================================================================
+   Keyframe Definitions
+   ========================================================================== */
+
+/* Slide animations */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+/* Fade animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale animations */
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleOut {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+/* Spring animation for sheet */
+@keyframes springUp {
+  0% {
+    transform: translateY(100%);
+  }
+  60% {
+    transform: translateY(-3%);
+  }
+  80% {
+    transform: translateY(1%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes springScale {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.99);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Pulse and glow animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(0, 255, 0, 0);
+  }
+}
+
+/* Spin animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Icon rotation */
+@keyframes rotateIn {
+  from {
+    transform: rotate(-90deg);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes rotateOut {
+  from {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(90deg);
+    opacity: 0;
+  }
+}
+
+/* Shake animation for errors */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-4px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(4px);
+  }
+}
+
+/* Stagger animation helper (for message lists) */
+@keyframes staggerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   Animation Utility Classes
+   ========================================================================== */
+
+@layer utilities {
+  /* Slide animations */
+  .animate-slide-up {
+    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .animate-slide-out-down {
+    animation: slideOutDown 0.2s ease-in forwards;
+  }
+
+  /* Fade animations */
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-fade-out {
+    animation: fadeOut 0.15s ease-in forwards;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.25s ease-out;
+  }
+
+  .animate-fade-in-down {
+    animation: fadeInDown 0.25s ease-out;
+  }
+
+  /* Scale animations */
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  .animate-scale-out {
+    animation: scaleOut 0.15s ease-in forwards;
+  }
+
+  /* Spring animations (for sheets) */
+  .animate-spring-up {
+    animation: springUp 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .animate-spring-scale {
+    animation: springScale 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  /* Continuous animations */
+  .animate-pulse {
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  .animate-spin-slow {
+    animation: spin 2s linear infinite;
+  }
+
+  /* Icon state changes */
+  .animate-rotate-in {
+    animation: rotateIn 0.2s ease-out;
+  }
+
+  .animate-rotate-out {
+    animation: rotateOut 0.2s ease-in forwards;
+  }
+
+  /* Error/feedback animations */
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  /* Stagger support */
+  .animate-stagger {
+    animation: staggerFadeIn 0.3s ease-out backwards;
+  }
+
+  .animate-stagger-1 {
+    animation-delay: 50ms;
+  }
+
+  .animate-stagger-2 {
+    animation-delay: 100ms;
+  }
+
+  .animate-stagger-3 {
+    animation-delay: 150ms;
+  }
+
+  .animate-stagger-4 {
+    animation-delay: 200ms;
+  }
+
+  .animate-stagger-5 {
+    animation-delay: 250ms;
+  }
+}
+
+/* ==========================================================================
+   Micro-interactions
+   ========================================================================== */
+
+@layer components {
+  /* Button press effect */
+  .btn-press {
+    transition: transform 0.1s ease-out;
+  }
+
+  .btn-press:active {
+    transform: scale(0.95);
+  }
+
+  /* Icon button with rotation on state change */
+  .icon-rotate {
+    transition: transform 0.2s ease-out;
+  }
+
+  .icon-rotate.is-active {
+    transform: rotate(180deg);
+  }
+
+  /* Loading spinner with fade */
+  .spinner-fade {
+    animation: spin 1s linear infinite, fadeIn 0.2s ease-out;
+  }
+
+  /* Progress bar smooth fill */
+  .progress-smooth {
+    transition: width 0.3s ease-out;
+  }
+
+  /* Expandable content */
+  .expand-content {
+    transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+    overflow: hidden;
+  }
+
+  .expand-content.is-collapsed {
+    max-height: 0;
+    opacity: 0;
+  }
+
+  .expand-content.is-expanded {
+    max-height: 500px;
+    opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   Sheet-specific Animations
+   ========================================================================== */
+
+@layer components {
+  /* Sheet backdrop */
+  .sheet-backdrop {
+    transition: opacity 0.3s ease-out, backdrop-filter 0.3s ease-out;
+  }
+
+  .sheet-backdrop-entering {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+
+  .sheet-backdrop-entered {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+  }
+
+  .sheet-backdrop-exiting {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+
+  /* Sheet panel */
+  .sheet-panel {
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+  }
+
+  .sheet-panel-entering {
+    transform: translateY(100%);
+  }
+
+  .sheet-panel-entered {
+    transform: translateY(0);
+  }
+
+  .sheet-panel-exiting {
+    transform: translateY(100%);
+  }
+
+  /* Sheet drag state - disable transitions during drag */
+  .sheet-panel-dragging {
+    transition: none !important;
+  }
+
+  /* Stacked sheet offset */
+  .sheet-stacked {
+    transform: scale(0.95) translateY(-8px);
+    opacity: 0.7;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+  }
+}
+
+/* ==========================================================================
+   Message Animations
+   ========================================================================== */
+
+@layer components {
+  /* Message entry animations */
+  .message-enter {
+    animation: fadeInUp 0.25s ease-out;
+  }
+
+  .message-enter-sent {
+    animation: slideInRight 0.25s ease-out;
+  }
+
+  .message-enter-received {
+    animation: slideInLeft 0.25s ease-out;
+  }
+
+  .message-enter-system {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  /* Message stagger for loading multiple */
+  .message-stagger {
+    animation: staggerFadeIn 0.3s ease-out backwards;
+  }
+
+  /* Typing indicator */
+  .typing-indicator {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  /* New message highlight */
+  .message-new {
+    animation: pulseGlow 0.6s ease-out;
+  }
+}
+
+/* ==========================================================================
+   Keyboard Avoidance
+   ========================================================================== */
+
+@layer utilities {
+  /* Smooth transition for keyboard-aware elements */
+  .keyboard-aware {
+    transition: transform 0.25s ease-out, padding-bottom 0.25s ease-out;
+  }
+
+  /* Apply when keyboard is visible */
+  .keyboard-visible {
+    /* Height set via JS using visualViewport API */
+  }
+}
+
+/* ==========================================================================
+   Performance Optimizations
+   ========================================================================== */
+
+/* GPU acceleration hints */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Will-change hints (use sparingly) */
+.will-animate-transform {
+  will-change: transform;
+}
+
+.will-animate-opacity {
+  will-change: opacity;
+}
+
+.will-animate-transform-opacity {
+  will-change: transform, opacity;
+}
+
+/* Remove will-change after animation completes */
+.animation-complete {
+  will-change: auto;
+}
+
+/* ==========================================================================
+   Reduced Motion Support
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Disable all custom animations */
+  .animate-slide-up,
+  .animate-slide-down,
+  .animate-slide-in-right,
+  .animate-slide-in-left,
+  .animate-slide-out-down,
+  .animate-fade-in,
+  .animate-fade-out,
+  .animate-fade-in-up,
+  .animate-fade-in-down,
+  .animate-scale-in,
+  .animate-scale-out,
+  .animate-spring-up,
+  .animate-spring-scale,
+  .animate-rotate-in,
+  .animate-rotate-out,
+  .animate-shake,
+  .animate-stagger,
+  .message-enter,
+  .message-enter-sent,
+  .message-enter-received,
+  .message-enter-system,
+  .message-stagger {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Keep essential loading indicators but make them subtle */
+  .animate-spin {
+    animation: spin 2s linear infinite;
+  }
+
+  .animate-pulse {
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  /* Disable micro-interactions */
+  .btn-press:active {
+    transform: none;
+  }
+
+  /* Instant transitions */
+  .sheet-panel,
+  .sheet-backdrop,
+  .expand-content,
+  .keyboard-aware {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==========================================================================
+   Touch Feedback
+   ========================================================================== */
+
+@layer utilities {
+  /* Touch ripple effect area */
+  .touch-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .touch-ripple::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(0, 255, 0, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease-out, height 0.3s ease-out, opacity 0.3s ease-out;
+    opacity: 0;
+  }
+
+  .touch-ripple:active::after {
+    width: 200%;
+    height: 200%;
+    opacity: 1;
+    transition: none;
+  }
+}

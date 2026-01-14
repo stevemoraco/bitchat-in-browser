@@ -13,7 +13,7 @@
  * @module components/emergency/WipeConfirmation
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
 
 // ============================================================================

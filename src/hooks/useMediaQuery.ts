@@ -484,9 +484,7 @@ export function useResponsive(): ResponsiveState {
     return 'desktop';
   }, [isMobile, isTablet]);
 
-  const orientation = useMemo((): Orientation => {
-    return isPortrait ? 'portrait' : 'landscape';
-  }, [isPortrait]);
+  const orientation = useMemo((): Orientation => isPortrait ? 'portrait' : 'landscape', [isPortrait]);
 
   return useMemo(
     () => ({

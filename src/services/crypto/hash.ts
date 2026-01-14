@@ -6,7 +6,8 @@
  */
 
 import { getSodium, ensureSodiumReady } from './init';
-import { PublicKeyFingerprint, CryptoConstants } from './types';
+import type { PublicKeyFingerprint} from './types';
+import { CryptoConstants } from './types';
 
 /**
  * Compute SHA-256 hash of data.

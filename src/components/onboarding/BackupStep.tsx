@@ -9,7 +9,7 @@
  * - Security warnings
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback, useEffect } from 'preact/hooks';
 import { IdentityService, type KeyBackup } from '../../services/identity';
 
@@ -99,7 +99,7 @@ export const BackupStep: FunctionComponent<BackupStepProps> = ({
       data: nsec,
       exportedAt: Date.now(),
       publicKey: '', // Not included for security
-      fingerprint: fingerprint,
+      fingerprint,
     };
 
     const content = JSON.stringify(backupData, null, 2);

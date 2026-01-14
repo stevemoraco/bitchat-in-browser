@@ -9,7 +9,7 @@
  * - Clear permission status indicators
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useState, useCallback, useEffect } from 'preact/hooks';
 
 // ============================================================================

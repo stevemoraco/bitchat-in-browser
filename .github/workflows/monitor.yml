@@ -1,0 +1,222 @@
+name: Gateway Health Monitoring
+
+on:
+  # Run every 5 minutes
+  schedule:
+    - cron: '*/5 * * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      cid:
+        description: 'IPFS CID to monitor (overrides default)'
+        required: false
+        type: string
+      generate_report:
+        description: 'Generate weekly report instead of health check'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  health-check:
+    name: Gateway Health Check
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.generate_report != 'true' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get current CID from deployment history
+        id: get-cid
+        run: |
+          if [ -n "${{ github.event.inputs.cid }}" ]; then
+            echo "cid=${{ github.event.inputs.cid }}" >> $GITHUB_OUTPUT
+          elif [ -f deployment-history.json ]; then
+            CID=$(jq -r '.currentCid // empty' deployment-history.json)
+            echo "cid=${CID}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ secrets.IPFS_CID }}" ]; then
+            echo "cid=${{ secrets.IPFS_CID }}" >> $GITHUB_OUTPUT
+          else
+            echo "::warning::No CID available for monitoring"
+            echo "cid=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run gateway health check
+        if: ${{ steps.get-cid.outputs.cid != '' }}
+        id: health-check
+        continue-on-error: true
+        env:
+          IPFS_CID: ${{ steps.get-cid.outputs.cid }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ALERT_THRESHOLD: '2'
+        run: |
+          npx tsx scripts/monitor-gateways.ts --cid "$IPFS_CID" --alert --json > health-result.json 2>&1 || true
+          cat health-result.json
+
+          # Extract health status
+          STATUS=$(jq -r '.overallHealth // "unknown"' health-result.json 2>/dev/null || echo "unknown")
+          HEALTHY=$(jq -r '.healthyGateways // 0' health-result.json 2>/dev/null || echo "0")
+          TOTAL=$(jq -r '.totalGateways // 0' health-result.json 2>/dev/null || echo "0")
+
+          echo "status=${STATUS}" >> $GITHUB_OUTPUT
+          echo "healthy=${HEALTHY}" >> $GITHUB_OUTPUT
+          echo "total=${TOTAL}" >> $GITHUB_OUTPUT
+
+      - name: Upload health history
+        if: ${{ steps.get-cid.outputs.cid != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gateway-health-history
+          path: gateway-health-history.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Update job summary
+        if: ${{ steps.get-cid.outputs.cid != '' }}
+        run: |
+          STATUS="${{ steps.health-check.outputs.status }}"
+          HEALTHY="${{ steps.health-check.outputs.healthy }}"
+          TOTAL="${{ steps.health-check.outputs.total }}"
+          CID="${{ steps.get-cid.outputs.cid }}"
+
+          if [ "$STATUS" = "healthy" ]; then
+            EMOJI=":white_check_mark:"
+          elif [ "$STATUS" = "degraded" ]; then
+            EMOJI=":warning:"
+          else
+            EMOJI=":x:"
+          fi
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          # Gateway Health Check Results
+
+          **Status:** ${EMOJI} ${STATUS^^}
+          **Healthy Gateways:** ${HEALTHY}/${TOTAL}
+          **CID:** \`${CID}\`
+          **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          ## Gateway URLs
+          - [eth.limo](https://${CID}.ipfs.eth.limo)
+          - [dweb.link](https://${CID}.ipfs.dweb.link)
+          - [ipfs.io](https://ipfs.io/ipfs/${CID})
+
+          ---
+          *Automated gateway monitoring every 5 minutes*
+          EOF
+
+      - name: Fail if critical
+        if: ${{ steps.health-check.outputs.status == 'critical' }}
+        run: |
+          echo "::error::Gateway health is CRITICAL. Less than 2 gateways are responding."
+          exit 1
+
+  weekly-report:
+    name: Generate Weekly Report
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.generate_report == 'true' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download health history artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gateway-health-history
+          path: .
+        continue-on-error: true
+
+      - name: Generate weekly report
+        run: npx tsx scripts/monitor-gateways.ts --report
+
+      - name: Create report issue
+        if: ${{ success() }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read history if available
+            let historyData = { entries: [] };
+            try {
+              historyData = JSON.parse(fs.readFileSync('gateway-health-history.json', 'utf8'));
+            } catch (e) {
+              console.log('No history file found');
+            }
+
+            // Calculate stats
+            const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+            const weekEntries = historyData.entries.filter(
+              e => new Date(e.timestamp).getTime() >= oneWeekAgo
+            );
+
+            const totalChecks = weekEntries.length;
+            const criticalCount = weekEntries.filter(e => e.healthyCount < 2).length;
+            const uptime = totalChecks > 0 ? ((totalChecks - criticalCount) / totalChecks * 100).toFixed(2) : 'N/A';
+
+            const body = `## Weekly Gateway Health Report
+
+            **Period:** Last 7 days
+            **Generated:** ${new Date().toISOString()}
+
+            ### Summary
+            - **Total Checks:** ${totalChecks}
+            - **Critical Incidents:** ${criticalCount}
+            - **Uptime:** ${uptime}%
+
+            ---
+            *This report is generated automatically every week.*
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Report] Weekly Gateway Health Report - ${new Date().toISOString().split('T')[0]}`,
+              body: body,
+              labels: ['report', 'gateway', 'automated']
+            });
+
+  # Scheduled weekly report (runs every Monday at 9 AM UTC)
+  scheduled-report:
+    name: Scheduled Weekly Report
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' && github.event.schedule == '0 9 * * 1' }}
+
+    steps:
+      - name: Trigger weekly report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'monitor.yml',
+              ref: 'main',
+              inputs: {
+                generate_report: 'true'
+              }
+            });

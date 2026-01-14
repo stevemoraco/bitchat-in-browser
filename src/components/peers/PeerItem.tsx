@@ -9,7 +9,7 @@
  * - Last seen timestamp
  */
 
-import { FunctionComponent } from 'preact';
+import type { FunctionComponent } from 'preact';
 import { useMemo } from 'preact/hooks';
 import type { Peer, PeerStatus } from '../../stores/types';
 
@@ -107,10 +107,10 @@ function formatLastSeen(timestamp: number): string {
     return `${hours}h ago`;
   } else if (days < 7) {
     return `${days}d ago`;
-  } else {
+  } 
     const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
+  
 }
 
 /**
