@@ -19,7 +19,9 @@ import type { FunctionComponent, ComponentChildren } from 'preact';
 import { Header } from './Header';
 import { Navigation } from './Navigation';
 import { StatusBar, CompactStatusBar } from './StatusBar';
+import { SheetRenderer } from './SheetRenderer';
 import { useAppStore } from '../../stores';
+import { useNavigationStore } from '../../stores/navigation-store';
 import { SkipLinks, SKIP_LINK_TARGETS } from '../a11y/SkipLinks';
 import { ariaLabels } from '../../hooks/useA11y';
 import {
@@ -79,6 +81,7 @@ export const Shell: FunctionComponent<ShellProps> = ({
   onEmergencyWipe,
 }) => {
   const currentView = useAppStore((state) => state.currentView);
+  const openChannels = useNavigationStore((state) => state.openChannels);
 
   // Responsive hooks
   const isMobile = useIsMobile();
@@ -103,7 +106,7 @@ export const Shell: FunctionComponent<ShellProps> = ({
     main-content flex-1 overflow-y-auto overflow-x-hidden
     ${shouldShowHeader ? 'pt-12' : ''}
     ${shouldShowNavigation && !isSidebarLayout ? 'pb-14' : ''}
-    ${isSidebarLayout ? 'main-content-with-sidebar' : ''}
+    ${isSidebarLayout ? 'main-content-with-sidebar lg:pl-64' : ''}
     ${isLandscape && isMobile ? 'landscape-safe-x' : ''}
   `;
 
@@ -135,6 +138,7 @@ export const Shell: FunctionComponent<ShellProps> = ({
         {/* Header */}
         {shouldShowHeader && (
           <Header
+            onMenuClick={openChannels}
             onEmergencyWipe={onEmergencyWipe}
           />
         )}
@@ -192,6 +196,9 @@ export const Shell: FunctionComponent<ShellProps> = ({
           unreadCounts={unreadCounts}
         />
       )}
+
+      {/* Sheet stack overlay for navigation sheets */}
+      <SheetRenderer />
     </div>
   );
 };

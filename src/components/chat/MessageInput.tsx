@@ -23,12 +23,13 @@ import type { FunctionComponent } from 'preact';
 import { useState, useRef, useEffect, useCallback } from 'preact/hooks';
 import type { ReplyMessage } from './MessageBubble';
 import { useIsMobile, useIsKeyboardOpen, useSafeAreaInsets, useIsLandscape } from '../../hooks/useMediaQuery';
-import { useNavigationStore, type SheetType } from '../../stores/navigation-store';
 import { usePeers } from '../../stores/peers-store';
 import { CommandAutocomplete, isCommandInput, extractCommandQuery, isCommandComplete, type Command } from './CommandAutocomplete';
 import { MentionAutocomplete, shouldShowMentionAutocomplete, extractMentionQuery, completeMention, extractMentions } from './MentionAutocomplete';
 import { VoiceRecorder } from './VoiceRecorder';
 import { VoiceRecorderService } from '../../services/media/voice-recorder';
+import { ImagePicker } from './ImagePicker';
+import type { ImageMessageContent } from '../../services/media/image-handler';
 import type { Peer } from '../../stores/types';
 
 // ============================================================================
@@ -40,6 +41,8 @@ export interface MessageInputProps {
   onSend: (content: string, mentions?: string[]) => void;
   /** Callback when a voice message is recorded */
   onVoiceSend?: (blob: Blob, duration: number, waveform: number[]) => void;
+  /** Callback when an image is selected and ready to send */
+  onImageSend?: (content: ImageMessageContent) => void;
   /** Callback when a command is executed */
   onCommand?: (command: string, args: string) => void;
   /** Whether the user is currently offline */
@@ -158,6 +161,7 @@ const MAX_HEIGHT = MIN_HEIGHT + (MAX_LINES - 1) * LINE_HEIGHT; // ~102px for 4 l
 export const MessageInput: FunctionComponent<MessageInputProps> = ({
   onSend,
   onVoiceSend,
+  onImageSend,
   onCommand,
   isOffline = false,
   replyTo = null,
@@ -172,8 +176,8 @@ export const MessageInput: FunctionComponent<MessageInputProps> = ({
   const [autocompleteMode, setAutocompleteMode] = useState<AutocompleteMode>('none');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const openSheet = useNavigationStore((state) => state.openSheet);
 
   // Check if voice recording is supported
   const voiceSupported = VoiceRecorderService.isSupported();
@@ -354,15 +358,16 @@ export const MessageInput: FunctionComponent<MessageInputProps> = ({
     }
   };
 
-  // Handle plus button click - opens attachment picker
+  // Handle plus button click - opens image picker
   const handlePlusClick = () => {
-    // For now, open a custom sheet as placeholder
-    // The attachment-picker sheet type can be added later
-    openSheet('custom' as SheetType, {
-      title: 'Attachments',
-      height: 'half',
-      props: { type: 'attachment-picker' },
-    });
+    setIsImagePickerOpen(true);
+  };
+
+  // Handle image selection from picker
+  const handleImageSelected = (content: ImageMessageContent) => {
+    if (onImageSend) {
+      onImageSend(content);
+    }
   };
 
   // Handle voice button click - start recording
@@ -569,6 +574,13 @@ export const MessageInput: FunctionComponent<MessageInputProps> = ({
           Press Enter to send, Shift+Enter for new line
         </span>
       </div>
+
+      {/* Image Picker Modal */}
+      <ImagePicker
+        isOpen={isImagePickerOpen}
+        onClose={() => setIsImagePickerOpen(false)}
+        onImageSelected={handleImageSelected}
+      />
     </div>
   );
 };

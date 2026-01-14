@@ -290,11 +290,9 @@ export default defineConfig({
       'nostr-tools',
       'dexie',
     ],
-    // Exclude libsodium from optimization - it has ESM resolution issues
-    exclude: ['libsodium-wrappers-sumo', 'libsodium-sumo'],
     esbuildOptions: {
-      // Force CommonJS for libsodium packages
-      mainFields: ['main', 'module'],
+      // Support top-level await in libsodium ESM
+      target: 'esnext',
     },
   },
 
@@ -310,8 +308,6 @@ export default defineConfig({
       '@utils': '/src/utils',
       '@types': '/src/types',
       '@workers': '/src/workers',
-      // Fix for libsodium ESM resolution - use CJS version
-      'libsodium-wrappers-sumo': resolve(__dirname, 'node_modules/libsodium-wrappers-sumo/dist/modules-sumo/libsodium-wrappers.js'),
     },
   },
 

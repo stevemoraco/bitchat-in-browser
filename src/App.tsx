@@ -420,6 +420,13 @@ const AppContent: FunctionComponent = () => {
   // Track if we need onboarding
   const needsOnboarding = !hasIdentity || !settings.onboardingComplete;
 
+  // Only block on critical init steps (crypto, storage, identity)
+  // Network services (nostr, webrtc, sync) can run in background
+  const criticalSteps: Array<'crypto' | 'storage' | 'identity'> = ['crypto', 'storage', 'identity'];
+  const isCriticalInitDone = init.currentStep === null ||
+    !criticalSteps.includes(init.currentStep as any) ||
+    init.complete;
+
   // Sync status state
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<number | undefined>(undefined);
@@ -444,10 +451,10 @@ const AppContent: FunctionComponent = () => {
     }
   }, [init.started, init.complete, actions]);
 
-  // Redirect to onboarding if needed, after init
+  // Redirect to onboarding if needed, after critical init (identity loaded)
   useEffect(() => {
     if (
-      init.complete &&
+      isCriticalInitDone &&
       needsOnboarding &&
       currentRoute.name !== 'onboarding' &&
       currentRoute.name !== 'download' &&
@@ -455,7 +462,7 @@ const AppContent: FunctionComponent = () => {
     ) {
       navigate(ROUTES.ONBOARDING, true);
     }
-  }, [init.complete, needsOnboarding, currentRoute.name]);
+  }, [isCriticalInitDone, needsOnboarding, currentRoute.name]);
 
   // Emergency wipe handler
   const handleEmergencyWipe = useCallback(async () => {
@@ -472,8 +479,8 @@ const AppContent: FunctionComponent = () => {
     []
   );
 
-  // Show loading during initialization
-  if (!init.complete && init.started) {
+  // Show loading only during critical initialization
+  if (!isCriticalInitDone && init.started) {
     return (
       <LoadingShell
         message={init.message || 'Initializing BitChat...'}

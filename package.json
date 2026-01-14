@@ -81,10 +81,12 @@
   },
   "dependencies": {
     "dexie": "^3.2.4",
+    "jsqr": "^1.4.0",
     "libsodium-wrappers-sumo": "^0.7.13",
     "nostr-tools": "^2.1.4",
     "preact": "^10.19.3",
     "preact-router": "^4.1.2",
+    "qrcode": "^1.5.4",
     "trystero": "^0.18.0",
     "workbox-window": "^7.0.0",
     "zustand": "^4.4.7"
@@ -97,6 +99,7 @@
     "@testing-library/preact": "^3.2.3",
     "@types/libsodium-wrappers-sumo": "^0.7.8",
     "@types/node": "^20.10.0",
+    "@types/qrcode": "^1.5.6",
     "@typescript-eslint/eslint-plugin": "^6.16.0",
     "@typescript-eslint/parser": "^6.16.0",
     "@vitest/coverage-v8": "^1.1.0",

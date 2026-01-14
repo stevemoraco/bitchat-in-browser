@@ -230,8 +230,7 @@ export const ChannelsPage: FunctionComponent<ChannelsPageProps> = ({
 
   return (
     <div class="flex flex-col h-screen bg-background text-text font-mono">
-      {/* App Header */}
-      <Header onSettingsClick={handleSettingsClick} isOnline />
+      {/* App Header handled by Shell */}
 
       {/* Active Channel Bar (when a channel is selected) */}
       {activeChannel && (

@@ -21,6 +21,7 @@ import { useAppStore } from '../../stores';
 import type { ViewType } from '../../stores/types';
 import { useNavigationLayout, useIsLandscape, useIsMobile } from '../../hooks/useMediaQuery';
 import { useRovingTabIndex, ariaLabels } from '../../hooks/useA11y';
+import { useNavigation, useCurrentRoute } from '../../hooks/useNavigation';
 
 // ============================================================================
 // Types
@@ -261,6 +262,10 @@ export const Navigation: FunctionComponent<NavigationProps> = ({
   const storeView = useAppStore((state) => state.currentView);
   const setView = useAppStore((state) => state.setView);
 
+  // Navigation hook for proper route-based navigation
+  const { toChannels, toMessages, toPeers, toSettings } = useNavigation();
+  const currentRoute = useCurrentRoute();
+
   // Responsive layout detection
   const responsiveLayout = useNavigationLayout();
   const isLandscape = useIsLandscape();
@@ -272,8 +277,29 @@ export const Navigation: FunctionComponent<NavigationProps> = ({
   // Determine position: use external prop if provided, otherwise use responsive layout
   const position = externalPosition ?? (responsiveLayout === 'sidebar' ? 'top' : 'bottom');
 
-  // Use external props if provided, otherwise use store
-  const activeTab = externalActiveTab ?? storeView;
+  // Determine active tab from current route
+  const getActiveTabFromRoute = (): ViewType => {
+    switch (currentRoute.name) {
+      case 'channels':
+      case 'channel':
+        return 'channels';
+      case 'messages':
+      case 'message':
+        return 'messages';
+      case 'peers':
+      case 'peer':
+        return 'peers';
+      case 'settings':
+        return 'settings';
+      case 'onboarding':
+        return 'onboarding';
+      default:
+        return 'channels';
+    }
+  };
+
+  // Use external props if provided, otherwise determine from route
+  const activeTab = externalActiveTab ?? getActiveTabFromRoute();
 
   // Find current active index
   const currentActiveIndex = NAV_ITEMS.findIndex(item => item.id === activeTab);
@@ -298,10 +324,27 @@ export const Navigation: FunctionComponent<NavigationProps> = ({
       if (externalOnTabChange) {
         externalOnTabChange(tab);
       } else {
-        setView(tab);
+        // Use route-based navigation instead of just updating store state
+        switch (tab) {
+          case 'channels':
+            toChannels();
+            break;
+          case 'messages':
+            toMessages();
+            break;
+          case 'peers':
+            toPeers();
+            break;
+          case 'settings':
+            toSettings();
+            break;
+          default:
+            // Fallback to store update for other views like onboarding
+            setView(tab);
+        }
       }
     },
-    [externalOnTabChange, setView]
+    [externalOnTabChange, setView, toChannels, toMessages, toPeers, toSettings]
   );
 
   // Don't show navigation on onboarding view

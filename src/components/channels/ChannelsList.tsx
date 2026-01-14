@@ -178,7 +178,7 @@ const EmptyState: FunctionComponent<EmptyStateProps> = ({
 }) => (
   <div class="empty-state py-8">
     <div class="empty-state-icon">
-      <SearchIcon class="w-full h-full" />
+      <SearchIcon class="w-12 h-12" />
     </div>
     <h3 class="empty-state-title">{title}</h3>
     <p class="empty-state-description">{description}</p>

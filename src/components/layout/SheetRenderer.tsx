@@ -6,24 +6,78 @@
  */
 
 import { h, type FunctionComponent } from 'preact';
-import { useNavigationStore, SheetState, type SheetType } from '../../stores/navigation-store';
+import { useState, useCallback } from 'preact/hooks';
+import { useNavigationStore, type SheetType } from '../../stores/navigation-store';
+import { useChannelsStore } from '../../stores/channels-store';
 import { Sheet } from '../ui/Sheet';
 import { MeshDebugPanel } from '../mesh/MeshDebugPanel';
+import { JoinMeshModal } from '../mesh/JoinMeshModal';
+import { IdentitySettings } from '../settings/IdentitySettings';
+import { PrivacySettings } from '../settings/PrivacySettings';
+import { NetworkSettings } from '../settings/NetworkSettings';
+import { StorageSettings } from '../settings/StorageSettings';
+import { AboutSettings } from '../settings/AboutSettings';
+import { ChannelsList } from '../channels/ChannelsList';
+import { PeersList } from '../peers/PeersList';
+import { PeerProfile } from '../peers/PeerProfile';
+import type { Peer } from '../../stores/types';
+import { navigate } from '../../router';
 
-// Lazy-load sheet contents to reduce initial bundle
-// These will be replaced with actual imports once components exist
-const SheetContents: Record<SheetType, FunctionComponent<{ props?: Record<string, unknown> }>> = {
-  'channels': ({ props }) => (
+// ============================================================================
+// Sheet Content Components
+// ============================================================================
+
+/** Wrapper for JoinMeshModal that works in sheet context */
+const MeshJoinSheet: FunctionComponent<{ props?: Record<string, unknown> }> = ({ props }) => {
+  const closeSheet = useNavigationStore((state) => state.closeSheet);
+  const title = (props?.title as string) || 'Join Mesh';
+  const isCreateMode = title.toLowerCase().includes('share');
+
+  return (
+    <JoinMeshModal
+      isOpen={true}
+      onClose={closeSheet}
+      onConnected={(peerId) => {
+        console.log('[MeshJoinSheet] Connected to peer:', peerId);
+        closeSheet();
+      }}
+    />
+  );
+};
+
+/** Channels list sheet */
+const ChannelsSheet: FunctionComponent<{ props?: Record<string, unknown> }> = () => {
+  const closeSheet = useNavigationStore((state) => state.closeSheet);
+
+  return (
     <div class="p-4">
-      <div class="text-gray-400 mb-4">Select a channel to join</div>
-      {/* ChannelList component will go here */}
-      <div class="space-y-2">
-        <div class="p-3 bg-gray-800 rounded-lg">Global</div>
-        <div class="p-3 bg-gray-800 rounded-lg">Local (9q8y)</div>
-        <div class="p-3 bg-gray-800 rounded-lg">Nearby (9q8)</div>
-      </div>
+      <ChannelsList
+        onChannelSelect={(channelId) => {
+          closeSheet();
+        }}
+      />
     </div>
-  ),
+  );
+};
+
+/** Peers list sheet */
+const PeersSheet: FunctionComponent<{ props?: Record<string, unknown> }> = () => {
+  const closeSheet = useNavigationStore((state) => state.closeSheet);
+
+  return (
+    <div class="p-4">
+      <PeersList
+        onPeerSelect={(peer) => {
+          closeSheet();
+        }}
+      />
+    </div>
+  );
+};
+
+// Sheet content mapping
+const SheetContents: Record<SheetType, FunctionComponent<{ props?: Record<string, unknown> }>> = {
+  'channels': ChannelsSheet,
 
   'channel-detail': ({ props }) => (
     <div class="p-4">
@@ -32,21 +86,7 @@ const SheetContents: Record<SheetType, FunctionComponent<{ props?: Record<string
     </div>
   ),
 
-  'peers': ({ props }) => (
-    <div class="p-4">
-      <div class="text-gray-400 mb-4">People in this channel</div>
-      {/* PeerList component will go here */}
-      <div class="space-y-2">
-        <div class="p-3 bg-gray-800 rounded-lg flex items-center gap-3">
-          <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white">A</div>
-          <div>
-            <div class="text-white">alice</div>
-            <div class="text-xs text-gray-500">Connected via Nostr</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  ),
+  'peers': PeersSheet,
 
   'peer-detail': ({ props }) => (
     <div class="p-4">
@@ -55,67 +95,53 @@ const SheetContents: Record<SheetType, FunctionComponent<{ props?: Record<string
     </div>
   ),
 
-  'settings': ({ props }) => (
-    <SettingsSheet />
-  ),
+  'settings': () => <SettingsSheet />,
 
-  'settings-identity': ({ props }) => (
+  'settings-identity': () => (
     <div class="p-4">
-      <div class="text-white">Identity Settings</div>
-      {/* IdentitySettings component will go here */}
+      <IdentitySettings />
     </div>
   ),
 
-  'settings-privacy': ({ props }) => (
+  'settings-privacy': () => (
     <div class="p-4">
-      <div class="text-white">Privacy Settings</div>
-      {/* PrivacySettings component will go here */}
+      <PrivacySettings />
     </div>
   ),
 
-  'settings-network': ({ props }) => (
+  'settings-network': () => (
     <div class="p-4">
-      <div class="text-white">Network Settings</div>
-      {/* NetworkSettings component will go here */}
+      <NetworkSettings />
     </div>
   ),
 
-  'settings-storage': ({ props }) => (
+  'settings-storage': () => (
     <div class="p-4">
-      <div class="text-white">Storage Settings</div>
-      {/* StorageSettings component will go here */}
+      <StorageSettings />
     </div>
   ),
 
-  'settings-about': ({ props }) => (
+  'settings-about': () => (
     <div class="p-4">
-      <div class="text-white">About BitChat</div>
-      <div class="text-gray-400 mt-2">Version 1.0.0</div>
+      <AboutSettings />
     </div>
   ),
 
-  'mesh-join': ({ props }) => (
-    <div class="p-4">
-      <div class="text-white">Join Mesh Network</div>
-      {/* JoinMeshModal content will go here */}
-    </div>
-  ),
+  'mesh-join': MeshJoinSheet,
 
-  'mesh-status': ({ props }) => (
-    <MeshDebugPanel />
-  ),
+  'mesh-status': () => <MeshDebugPanel />,
 
   'key-import': ({ props }) => (
     <div class="p-4">
       <div class="text-white">Import Nostr Key</div>
-      {/* KeyImport component will go here */}
+      <div class="text-gray-400 mt-2">Key import functionality</div>
     </div>
   ),
 
   'share-app': ({ props }) => (
     <div class="p-4">
       <div class="text-white">Share BitChat</div>
-      {/* ShareApp component will go here */}
+      <div class="text-gray-400 mt-2">Share the app with others nearby</div>
     </div>
   ),
 

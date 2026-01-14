@@ -10,11 +10,15 @@
  * - /me actions shown as * nick action
  * - Join messages: --> nick has joined
  * - Leave messages: <-- nick has left
+ * - Voice message playback with waveform visualization
+ * - Lightning invoice detection with PaymentChip rendering
  */
 
-import type { FunctionComponent } from 'preact';
+import type { FunctionComponent, VNode } from 'preact';
 import { useMemo } from 'preact/hooks';
 import type { Message, MessageStatus } from '../../stores/types';
+import { PaymentChip, tokenizeLightningInvoices } from './PaymentChip';
+import { VoiceMessage } from './VoiceMessage';
 
 // ============================================================================
 // Types
@@ -115,9 +119,42 @@ const isActionMessage = (content: string): boolean => content.startsWith('/me ')
 /**
  * Get the action text from a /me message
  */
-const getActionText = (content: string): string => 
+const getActionText = (content: string): string =>
    content.slice(4) // Remove "/me "
 ;
+
+/**
+ * Render message content with embedded PaymentChips for Lightning invoices
+ */
+const renderContentWithPayments = (content: string): VNode | string => {
+  const tokens = tokenizeLightningInvoices(content);
+
+  // If no invoices found, return plain text
+  if (tokens.length === 1 && tokens[0].type === 'text') {
+    return content;
+  }
+
+  // Render tokens with PaymentChips for invoices
+  return (
+    <>
+      {tokens.map((token, index) => {
+        if (token.type === 'text') {
+          return <span key={index}>{token.content}</span>;
+        }
+        return (
+          <PaymentChip
+            key={index}
+            invoice={token.invoice}
+            compact={false}
+            showPayButton={true}
+            showDescription={true}
+            className="my-1"
+          />
+        );
+      })}
+    </>
+  );
+};
 
 /**
  * Parse system message content to determine type
@@ -232,8 +269,39 @@ export const IRCMessage: FunctionComponent<IRCMessageProps> = ({
     );
   }
 
-  // Action messages (/me)
+  // Voice messages - render VoiceMessage component with playback controls
+  if (type === 'voice' && message.voiceNoteId) {
+    return (
+      <div
+        class="irc-message irc-message-voice animate-terminal-fade-in"
+        onContextMenu={handleContextMenu}
+      >
+        {showTimestamp && (
+          <span class="irc-timestamp">{formattedTime}</span>
+        )}
+        <span class="irc-nick-wrapper">
+          &lt;<span class="irc-nick" style={{ color: nickColor }}>{senderNickname}</span>&gt;
+        </span>
+        <div class="irc-voice-content">
+          <VoiceMessage
+            voiceNoteId={message.voiceNoteId}
+            duration={message.voiceDuration}
+            waveformData={message.voiceWaveform}
+            isOwn={isOwn}
+          />
+        </div>
+        {isOwn && showStatus && statusIndicator && (
+          <span class={`irc-status ${status === 'failed' ? 'irc-status-failed' : ''}`}>
+            {statusIndicator}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  // Action messages (/me) - also support Lightning invoices
   if (isAction || type === 'action') {
+    const renderedActionText = renderContentWithPayments(actionText);
     return (
       <div
         class="irc-message irc-message-action animate-terminal-fade-in"
@@ -246,7 +314,7 @@ export const IRCMessage: FunctionComponent<IRCMessageProps> = ({
         <span class="irc-nick" style={{ color: nickColor }}>
           {senderNickname}
         </span>
-        <span class="irc-action-text">{actionText}</span>
+        <span class="irc-action-text">{renderedActionText}</span>
         {isOwn && showStatus && statusIndicator && (
           <span class={`irc-status ${status === 'failed' ? 'irc-status-failed' : ''}`}>
             {statusIndicator}
@@ -256,7 +324,12 @@ export const IRCMessage: FunctionComponent<IRCMessageProps> = ({
     );
   }
 
-  // Regular messages
+  // Regular messages - render with PaymentChip support for Lightning invoices
+  const renderedContent = useMemo(
+    () => renderContentWithPayments(content),
+    [content]
+  );
+
   return (
     <div
       class="irc-message animate-terminal-fade-in"
@@ -268,7 +341,7 @@ export const IRCMessage: FunctionComponent<IRCMessageProps> = ({
       <span class="irc-nick-wrapper">
         &lt;<span class="irc-nick" style={{ color: nickColor }}>{senderNickname}</span>&gt;
       </span>
-      <span class="irc-content selectable">{content}</span>
+      <span class="irc-content selectable">{renderedContent}</span>
       {isOwn && showStatus && statusIndicator && (
         <span class={`irc-status ${status === 'failed' ? 'irc-status-failed' : ''}`}>
           {statusIndicator}
